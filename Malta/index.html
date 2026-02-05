@@ -1,174 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Regional Chatbot for UK and Malta</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Malta Regional Chatbot</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    /* ---------- TOP LINKS ---------- */
-    h3 {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  margin: 0;
-  font-size: 14px;
-  display: inline-block;
-  transition: transform 0.3s ease;
-}
-
-
-    h3:first-of-type {
-  right: 140px;
-}
-    /* ---------- SIDEBAR ---------- */
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: -250px;
-      width: 250px;
-      height: 100vh;
-      background: #f4f4f4;
-      padding: 15px;
-      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-      transition: left 0.3s ease;
-      z-index: 999;
-    }
-
-    .sidebar h4 {
-      margin-top: 0;
-    }
-
-    .sidebar ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    .sidebar li {
-      padding: 8px 0;
-      cursor: pointer;
-      border-bottom: 1px solid #ddd;
-    }
-
-    /* ---------- TOGGLE BUTTON ---------- */
-    .toggle-btn {
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    font-size: 20px;
-    cursor: pointer;
-    z-index: 1100;
-    background: none;
-    border: none;
-    transition: left 0.3s ease;
-    }
-    
-
-    /* Move toggle button when sidebar opens */
-    .sidebar.active ~ .toggle-btn,
-    .main-content.shift ~ .toggle-btn {
-    left: 265px; /* sidebar width + gap */
-    }
-
-
-    /* ---------- MAIN CONTENT ---------- */
-    .main-content {
-      transition: margin-left 0.3s ease;
-      text-align: center;
-    }
-
-    .main-content.shift {
-      margin-left: 250px;
-    }
-
-    /* ---------- HEADING ---------- */
-    h2 {
-      margin-top: 80px;
-    }
-
-    /* ---------- CHAT INPUT ---------- */
-    .chat-input {
-    position: absolute;          /* KEY CHANGE */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 400px;
-    padding: 12px 16px;
-    font-size: 16px;
-    border-radius: 20px;
-    border: 1px solid #aaa;
-    outline: none;
-    }
-
-
-    /* ---------- ACTIVE STATES ---------- */
-    .sidebar.active {
-      left: 0;
-    }
-
-    /* ---------- RESPONSIVE ---------- */
-    @media (max-width: 600px) {
-      .chat-input {
-        width: 80%;
-      }
-
-      h3:nth-of-type(2) {
-        left: 140px;
-      }
-    }
-  </style>
+  <!-- COMMON + MALTA CSS -->
+  <link rel="stylesheet" href="../Styles/common.css">
+  <link rel="stylesheet" href="../Styles/Malta.css">
 </head>
 
 <body>
 
-  <!-- Toggle Button -->
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+  <div class="app">
 
-  <!-- Sidebar -->
-  <div class="sidebar" id="sidebar">
-    <h4>Chat History</h4>
-    <ul>
-      <li>Chat 1</li>
-      <li>Chat 2</li>
-      <li>Chat 3</li>
-    </ul>
-  </div>
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <h3>Chat History</h3>
+      <ul class="chat-list">
+        <li>Chat 1</li>
+        <li>Chat 2</li>
+        <li>Chat 3</li>
+      </ul>
+    </aside>
 
-  <!-- Main Content -->
-  <div class="main-content" id="mainContent">
+    <!-- MAIN -->
+    <section class="main">
 
-    <h3>
-      <a href="API and Documentation" title="API and Documentation">
-        API and Documentation
-      </a>
-    </h3>
+      <!-- TOP BAR -->
+      <div class="top-bar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
 
-    <h3>
-      <a href="About us" title="About us">
-        About us
-      </a>
-    </h3>
+        <div class="top-links">
+          <a href="#">API & Docs</a>
+          <a href="#">About</a>
+          <span class="theme-toggle" onclick="toggleTheme()">🌙</span>
+        </div>
+      </div>
 
-    <h2>Welcome to the Regional Chatbot Service for Malta</h2>
+      <!-- CHAT AREA -->
+      <div class="messages" id="messages">
+        <div class="message bot">
+          Hello! Welcome to the Malta chatbot. How can I help you?
+        </div>
+      </div>
 
-    <input
-      type="text"
-      class="chat-input"
-      placeholder="Type your message here..."
-    >
+      <!-- INPUT -->
+      <div class="input-bar">
+        <input
+          type="text"
+          id="chatInput"
+          placeholder="Type your message..."
+          onkeydown="handleEnter(event)"
+        />
+        <button onclick="sendMessage()">Send</button>
+      </div>
 
+    </section>
   </div>
 
   <!-- JS -->
   <script>
     function toggleSidebar() {
-      document.getElementById("sidebar").classList.toggle("active");
-      document.getElementById("mainContent").classList.toggle("shift");
+      document.getElementById("sidebar").classList.toggle("collapsed");
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.dataset.theme =
+        html.dataset.theme === "dark" ? "light" : "dark";
+    }
+
+    function handleEnter(e) {
+      if (e.key === "Enter") sendMessage();
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("chatInput");
+      const messages = document.getElementById("messages");
+
+      if (!input.value.trim()) return;
+
+      const userMsg = document.createElement("div");
+      userMsg.className = "message user";
+      userMsg.innerText = input.value;
+      messages.appendChild(userMsg);
+
+      input.value = "";
+      messages.scrollTop = messages.scrollHeight;
+
+      // Placeholder bot response
+      setTimeout(() => {
+        const botMsg = document.createElement("div");
+        botMsg.className = "message bot";
+        botMsg.innerText = "This will be replaced by the chatbot response.";
+        messages.appendChild(botMsg);
+        messages.scrollTop = messages.scrollHeight;
+      }, 500);
     }
   </script>
 
