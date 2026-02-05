@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>UK Regional Chatbot</title>
 
-  <!-- COMMON + UK CSS -->
+  <!-- CSS -->
   <link rel="stylesheet" href="../Styles/common.css">
   <link rel="stylesheet" href="../Styles/UK.css">
 </head>
@@ -38,14 +38,14 @@
         </div>
       </div>
 
-      <!-- CHAT AREA -->
+      <!-- CHAT MESSAGES -->
       <div class="messages" id="messages">
         <div class="message bot">
           Hello! Welcome to the UK chatbot. How can I help you?
         </div>
       </div>
 
-      <!-- INPUT -->
+      <!-- INPUT BAR -->
       <div class="input-bar">
         <input
           type="text"
@@ -60,43 +60,12 @@
   </div>
 
   <!-- JS -->
+  <script src="../Scripts/chat.js"></script>
+
+  <!-- Sidebar toggle helper -->
   <script>
     function toggleSidebar() {
       document.getElementById("sidebar").classList.toggle("collapsed");
-    }
-
-    function toggleTheme() {
-      const html = document.documentElement;
-      html.dataset.theme =
-        html.dataset.theme === "dark" ? "light" : "dark";
-    }
-
-    function handleEnter(e) {
-      if (e.key === "Enter") sendMessage();
-    }
-
-    function sendMessage() {
-      const input = document.getElementById("chatInput");
-      const messages = document.getElementById("messages");
-
-      if (!input.value.trim()) return;
-
-      const userMsg = document.createElement("div");
-      userMsg.className = "message user";
-      userMsg.innerText = input.value;
-      messages.appendChild(userMsg);
-
-      input.value = "";
-      messages.scrollTop = messages.scrollHeight;
-
-      // Placeholder bot response
-      setTimeout(() => {
-        const botMsg = document.createElement("div");
-        botMsg.className = "message bot";
-        botMsg.innerText = "This will be replaced by the chatbot response.";
-        messages.appendChild(botMsg);
-        messages.scrollTop = messages.scrollHeight;
-      }, 500);
     }
   </script>
 
