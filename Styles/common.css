@@ -3,6 +3,18 @@
    ========================================================= */
 
 /* Light mode (default) */
+
+:root {
+  --icon-color: #111827;
+  --btn-hover: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] {
+  --icon-color: #e5e7eb;
+  --btn-hover: rgba(255, 255, 255, 0.08);
+}
+
+
 :root {
   --bg-main: #f9fafb;
   --bg-sidebar: #ffffff;
@@ -113,6 +125,29 @@ body {
   background: rgba(0, 0, 0, 0.05);
 }
 
+.new-chat-btn {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 8px;
+
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--icon-color);   /* 🔑 FIX */
+
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.new-chat-btn:hover {
+  background: var(--btn-hover);
+}
+
+
+.chat-list li.active {
+  background: rgba(0,0,0,0.1);
+  font-weight: 500;
+}
+
 /* =========================================================
    MAIN AREA
    ========================================================= */
@@ -151,7 +186,14 @@ body {
   padding: 6px 10px;
   font-size: 18px;
   cursor: pointer;
+
+  color: var(--icon-color);   /* 🔑 FIX */
 }
+
+.sidebar-toggle:hover {
+  background: var(--btn-hover);
+}
+
 
 .top-links {
   display: flex;
