@@ -1,0 +1,13 @@
+/* UK accents */
+:root {
+  --bg-user: #1e40af;
+}
+
+.top-links a {
+  color: #1e40af;
+}
+
+.sidebar h3,
+.content h1 {
+  color: #1e40af;
+}
