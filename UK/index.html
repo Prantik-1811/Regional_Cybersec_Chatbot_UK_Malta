@@ -1,74 +1,822 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UK Regional Chatbot</title>
+<html lang="en" data-theme="dark">
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="../Styles/common.css">
-  <link rel="stylesheet" href="../Styles/UK.css">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UK Cybersecurity Hub | Protect, Report, Stay Safe</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    content="UK Cybersecurity Hub - Your comprehensive resource for cyber security news, live threat tracking, crime reporting, and protection guidance.">
+  <meta name="keywords"
+    content="UK cybersecurity, cyber crime reporting, Action Fraud, NCSC, cyber threats, phishing, ransomware">
+
+  <!-- Favicon -->
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/cyber-map.css">
 </head>
 
 <body>
-
-  <div class="app">
-
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-      <h3>Chat History</h3>
-      <ul class="chat-list" id="chatList"></ul>
-
-      <button class="new-chat-btn" onclick="createNewChat()">
-      + New Chat
-      </button>
-
-    </aside>
-
-    <!-- MAIN -->
-    <section class="main">
-
-      <!-- TOP BAR -->
-      <div class="top-bar">
-        <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
-
-        <div class="top-links">
-          <a href="#">API & Docs</a>
-          <a href="#">About</a>
-          <span class="theme-toggle" onclick="toggleTheme()">🌙</span>
-        </div>
+  <!-- =========================================================
+       HEADER / NAVIGATION
+       ========================================================= -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">🛡️</div>
+        <span>CyberSafe UK</span>
       </div>
 
-      <!-- CHAT MESSAGES -->
-      <div class="messages" id="messages">
-        <div class="message bot">
-          Hello! Welcome to the UK chatbot. How can I help you?
-        </div>
-      </div>
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-tab="home">Home</button>
+        <button class="nav-tab" data-tab="threats">Live Threats</button>
+        <button class="nav-tab" data-tab="centers">Report Centers</button>
+        <button class="nav-tab" data-tab="docs">API & Docs</button>
+        <button class="nav-tab" data-tab="about">About Us</button>
+        <button class="nav-tab" data-tab="report">Report Crime</button>
+      </nav>
 
-      <!-- INPUT BAR -->
-      <div class="input-bar">
-        <input
-          type="text"
-          id="chatInput"
-          placeholder="Type your message..."
-          onkeydown="handleEnter(event)"
-        />
-        <button onclick="sendMessage()">Send</button>
+      <div class="header-actions">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
       </div>
+    </div>
+  </header>
 
-    </section>
+  <!-- Update Notification Banner -->
+  <div id="update-banner" class="update-banner hidden">
+    <div class="update-banner-content">
+      <span class="update-icon">🔔</span>
+      <span class="update-text">Checking for updates...</span>
+      <button class="update-close" onclick="closeBanner()">×</button>
+    </div>
   </div>
 
-  <!-- JS -->
-  <script src="../Scripts/chat.js"></script>
+  <!-- =========================================================
+       MAIN CONTENT
+       ========================================================= -->
+  <main class="main-content">
+    <div class="container">
 
-  <!-- Sidebar toggle helper -->
-  <script>
-    function toggleSidebar() {
-      document.getElementById("sidebar").classList.toggle("collapsed");
-    }
-  </script>
+      <!-- =====================================================
+           HOME TAB
+           ===================================================== -->
+      <section id="home" class="tab-content active">
 
+        <!-- Hero Section -->
+        <div class="hero-section">
+          <h1 class="hero-title">UK Cybersecurity<br>Intelligence Hub</h1>
+          <p class="hero-subtitle">
+            Stay informed with real-time threat intelligence, report cybercrime, and access resources to protect
+            yourself and your organization.
+          </p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card glass-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value" data-counter="7780000">0</div>
+            <div class="stat-label">Cyber Attacks in UK (2024)</div>
+          </div>
+
+          <div class="stat-card glass-card">
+            <div class="stat-icon">🛡️</div>
+            <div class="stat-value" data-counter="2100000000">0</div>
+            <div class="stat-label">Fraud Losses Prevented (£)</div>
+          </div>
+
+          <div class="stat-card glass-card">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-value" data-counter="204">0</div>
+            <div class="stat-label">Major Incidents (NCSC 2025)</div>
+          </div>
+
+          <div class="stat-card glass-card">
+            <div class="stat-icon">🏢</div>
+            <div class="stat-value">43%</div>
+            <div class="stat-label">UK Businesses Affected</div>
+          </div>
+        </div>
+
+        <!-- Article Slider -->
+        <div class="slider-section">
+          <div class="section-header">
+            <h2 class="section-title">📰 Latest Cyber Security Insights</h2>
+            <div class="slider-controls">
+              <button class="slider-btn" onclick="prevSlide()">←</button>
+              <button class="slider-btn" onclick="nextSlide()">→</button>
+            </div>
+          </div>
+
+          <div class="slider-container glass-card">
+            <div class="slider-track">
+              <!-- Slides will be dynamically loaded -->
+              <div class="slide">
+                <div class="article-card">
+                  <div class="article-content">
+                    <span class="article-tag">Loading...</span>
+                    <h2 class="article-title">Loading Articles</h2>
+                    <p class="article-excerpt">Please wait while we load the latest cybersecurity insights...</p>
+                  </div>
+                  <div class="article-visual">🔄</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="slider-dots">
+            <!-- Dots will be dynamically generated -->
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="stats-grid" style="margin-top: 3rem;">
+          <div class="stat-card glass-card" style="cursor: pointer;" onclick="switchTab('report')">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">🚨</div>
+            <h3 style="margin-bottom: 0.5rem;">Report Cybercrime</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Submit a report for phishing, fraud, or hacking
+              incidents</p>
+          </div>
+
+          <div class="stat-card glass-card" style="cursor: pointer;" onclick="switchTab('threats')">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">🌍</div>
+            <h3 style="margin-bottom: 0.5rem;">Live Threat Map</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">View real-time cyber attacks happening around the
+              world</p>
+          </div>
+
+          <div class="stat-card glass-card" style="cursor: pointer;" onclick="switchTab('centers')">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">📍</div>
+            <h3 style="margin-bottom: 0.5rem;">Find Help Near You</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Locate reporting centers and get support</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- =====================================================
+           LIVE THREATS TAB
+           ===================================================== -->
+      <section id="threats" class="tab-content">
+        <h1 style="margin-bottom: 2rem;">🌐 Live Cyber Threat Map</h1>
+
+        <div class="threat-map-section">
+          <!-- Map Container -->
+          <div class="map-container glass-card">
+            <div class="world-map">
+              <!-- Accurate World Map from external SVG -->
+              <object data="assets/world-map.svg" type="image/svg+xml" style="width: 100%; height: 100%;">
+                <!-- Fallback SVG -->
+                <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M 150 100 Q 200 80 250 100 L 280 150 Q 300 200 280 250 L 200 280" fill="currentColor" />
+                  <circle cx="480" cy="140" r="8" fill="#0ea5e9" opacity="0.8" />
+                </svg>
+              </object>
+
+              <!-- Attack Animation Container -->
+              <div class="attack-lines" style="position: absolute; inset: 0; pointer-events: none;"></div>
+
+              <!-- Attack Points -->
+              <div class="attack-point" style="left: 75%; top: 25%;"></div>
+              <div class="attack-point" style="left: 82%; top: 40%; animation-delay: 0.5s;"></div>
+              <div class="attack-point" style="left: 20%; top: 35%; animation-delay: 1s;"></div>
+            </div>
+          </div>
+
+          <!-- Threat Stats -->
+          <div class="threat-stats">
+            <div class="threat-stat-card glass-card">
+              <div class="threat-stat-header">
+                <div class="threat-stat-icon danger">⚡</div>
+                <span class="threat-stat-title">Total Attacks Today</span>
+              </div>
+              <div class="threat-stat-value" data-stat="total">0</div>
+            </div>
+
+            <div class="threat-stat-card glass-card">
+              <div class="threat-stat-header">
+                <div class="threat-stat-icon success">🛡️</div>
+                <span class="threat-stat-title">Attacks Blocked</span>
+              </div>
+              <div class="threat-stat-value" data-stat="blocked">0</div>
+            </div>
+
+            <div class="threat-stat-card glass-card">
+              <div class="threat-stat-header">
+                <div class="threat-stat-icon warning">🔴</div>
+                <span class="threat-stat-title">Active Attacks</span>
+              </div>
+              <div class="threat-stat-value" data-stat="active">0</div>
+            </div>
+
+            <div class="threat-stat-card glass-card">
+              <div class="threat-stat-header">
+                <div class="threat-stat-icon info">📊</div>
+                <span class="threat-stat-title">Attack Types</span>
+              </div>
+              <div class="threat-type-list">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attack Legend -->
+        <div class="stats-grid" style="margin-top: 2rem;">
+          <div class="stat-card glass-card">
+            <h4 style="margin-bottom: 1rem;">🎯 Top Source Countries</h4>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="display: flex; justify-content: space-between;"><span>🇷🇺 Russia</span><span
+                  style="color: var(--danger);">32%</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>🇨🇳 China</span><span
+                  style="color: var(--warning);">28%</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>🇰🇵 North Korea</span><span
+                  style="color: var(--accent-primary);">15%</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>🇮🇷 Iran</span><span
+                  style="color: var(--text-muted);">12%</span></div>
+            </div>
+          </div>
+
+          <div class="stat-card glass-card">
+            <h4 style="margin-bottom: 1rem;">🏢 Most Targeted Sectors</h4>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="display: flex; justify-content: space-between;"><span>🏥 Healthcare</span><span
+                  style="color: var(--danger);">24%</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>🏛️ Government</span><span
+                  style="color: var(--warning);">21%</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>💰 Financial</span><span
+                  style="color: var(--accent-primary);">19%</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>🎓 Education</span><span
+                  style="color: var(--text-muted);">14%</span></div>
+            </div>
+          </div>
+
+          <div class="stat-card glass-card">
+            <h4 style="margin-bottom: 1rem;">⏰ Peak Attack Hours</h4>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="display: flex; justify-content: space-between;"><span>02:00 - 06:00</span><span
+                  style="color: var(--danger);">High</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>09:00 - 11:00</span><span
+                  style="color: var(--warning);">Medium</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>14:00 - 16:00</span><span
+                  style="color: var(--warning);">Medium</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>20:00 - 23:00</span><span
+                  style="color: var(--danger);">High</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================
+           REPORTING CENTERS TAB
+           ===================================================== -->
+      <section id="centers" class="tab-content">
+        <h1 style="margin-bottom: 2rem;">📍 UK Cybercrime Reporting Centers</h1>
+
+        <div class="centers-section">
+          <!-- UK Map -->
+          <div class="uk-map-container glass-card">
+            <div class="uk-map"
+              style="background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; position: relative; min-height: 500px;">
+              <!-- Accurate UK Map from external SVG -->
+              <object data="assets/uk-map.svg" type="image/svg+xml" style="width: 100%; max-height: 600px;">
+                <!-- Fallback -->
+                <p>UK Map</p>
+              </object>
+            </div>
+          </div>
+
+          <!-- Center Cards -->
+          <div class="center-cards">
+            <!-- Action Fraud -->
+            <div class="center-card glass-card active">
+              <div class="center-name">Action Fraud</div>
+              <span class="center-type">National Reporting Centre</span>
+              <div class="center-info">
+                <div class="center-info-item">
+                  📞 <a href="tel:03001232040">0300 123 2040</a>
+                </div>
+                <div class="center-info-item">
+                  🌐 <a href="https://www.actionfraud.police.uk" target="_blank">actionfraud.police.uk</a>
+                </div>
+                <div class="center-info-item">
+                  📍 City of London Police, London
+                </div>
+                <div class="center-info-item">
+                  ⏰ 24/7 Online | Phone: Mon-Fri 8am-8pm
+                </div>
+              </div>
+            </div>
+
+            <!-- NCSC -->
+            <div class="center-card glass-card">
+              <div class="center-name">National Cyber Security Centre (NCSC)</div>
+              <span class="center-type">Government Agency</span>
+              <div class="center-info">
+                <div class="center-info-item">
+                  🌐 <a href="https://www.ncsc.gov.uk" target="_blank">ncsc.gov.uk</a>
+                </div>
+                <div class="center-info-item">
+                  📧 Report suspicious emails to: report@phishing.gov.uk
+                </div>
+                <div class="center-info-item">
+                  📍 London, UK
+                </div>
+              </div>
+            </div>
+
+            <!-- Police Scotland -->
+            <div class="center-card glass-card">
+              <div class="center-name">Police Scotland</div>
+              <span class="center-type" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">Scotland
+                Only</span>
+              <div class="center-info">
+                <div class="center-info-item">
+                  📞 <a href="tel:101">101</a> (Non-emergency)
+                </div>
+                <div class="center-info-item">
+                  🌐 <a href="https://www.scotland.police.uk" target="_blank">scotland.police.uk</a>
+                </div>
+                <div class="center-info-item">
+                  📍 Edinburgh, Scotland
+                </div>
+              </div>
+            </div>
+
+            <!-- Crimestoppers -->
+            <div class="center-card glass-card">
+              <div class="center-name">Crimestoppers</div>
+              <span class="center-type" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">Anonymous
+                Reporting</span>
+              <div class="center-info">
+                <div class="center-info-item">
+                  📞 <a href="tel:0800555111">0800 555 111</a>
+                </div>
+                <div class="center-info-item">
+                  🌐 <a href="https://crimestoppers-uk.org" target="_blank">crimestoppers-uk.org</a>
+                </div>
+                <div class="center-info-item">
+                  📍 UK-wide, 100% Anonymous
+                </div>
+              </div>
+            </div>
+
+            <!-- ICO -->
+            <div class="center-card glass-card">
+              <div class="center-name">Information Commissioner's Office (ICO)</div>
+              <span class="center-type" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">Data
+                Breaches</span>
+              <div class="center-info">
+                <div class="center-info-item">
+                  📞 <a href="tel:03031231113">0303 123 1113</a>
+                </div>
+                <div class="center-info-item">
+                  🌐 <a href="https://ico.org.uk" target="_blank">ico.org.uk</a>
+                </div>
+                <div class="center-info-item">
+                  📍 Wilmslow, Cheshire
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emergency Info -->
+        <div class="glass-card"
+          style="margin-top: 2rem; padding: 2rem; text-align: center; border: 2px solid var(--danger);">
+          <h3 style="color: var(--danger); margin-bottom: 1rem;">🚨 Emergency</h3>
+          <p style="font-size: 1.1rem; margin-bottom: 1rem;">If you or someone else is in immediate danger, call <strong
+              style="font-size: 1.5rem;">999</strong></p>
+          <p style="color: var(--text-muted);">For non-emergency police matters, call <strong>101</strong></p>
+        </div>
+      </section>
+
+      <!-- =====================================================
+           API & DOCS TAB
+           ===================================================== -->
+      <section id="docs" class="tab-content">
+        <div class="docs-section">
+          <!-- Sidebar -->
+          <aside class="docs-sidebar glass-card">
+            <nav class="docs-nav">
+              <button class="docs-nav-item active">Getting Started</button>
+              <button class="docs-nav-item">Authentication</button>
+              <button class="docs-nav-item">Threat Intelligence</button>
+              <button class="docs-nav-item">Incident Reporting</button>
+              <button class="docs-nav-item">Statistics</button>
+              <button class="docs-nav-item">Webhooks</button>
+            </nav>
+          </aside>
+
+          <!-- Content -->
+          <div class="docs-content glass-card">
+            <h1 class="docs-title">API Documentation</h1>
+            <p class="docs-desc">
+              Welcome to the CyberSafe UK API. This API provides programmatic access to threat intelligence,
+              incident reporting, and cybersecurity statistics for the United Kingdom.
+            </p>
+
+            <h2 style="margin: 2rem 0 1rem;">Base URL</h2>
+            <div class="code-block">
+              <code>https://api.cybersafe.uk/v1</code>
+            </div>
+
+            <h2 style="margin: 2rem 0 1rem;">Authentication</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+              All API requests require an API key passed in the header:
+            </p>
+            <div class="code-block">
+              <code>Authorization: Bearer YOUR_API_KEY</code>
+            </div>
+
+            <h2 style="margin: 2rem 0 1rem;">Endpoints</h2>
+
+            <div class="endpoint-card glass-card">
+              <div style="margin-bottom: 1rem;">
+                <span class="endpoint-method get">GET</span>
+                <span class="endpoint-path">/threats/live</span>
+              </div>
+              <p style="color: var(--text-secondary);">Get real-time threat intelligence data</p>
+              <div class="code-block">
+                <code>{
+  "status": "success",
+  "data": {
+    "total_attacks": 15234,
+    "blocked": 12891,
+    "active": 42,
+    "top_types": ["phishing", "ransomware", "ddos"]
+  }
+}</code>
+              </div>
+            </div>
+
+            <div class="endpoint-card glass-card">
+              <div style="margin-bottom: 1rem;">
+                <span class="endpoint-method post">POST</span>
+                <span class="endpoint-path">/incidents/report</span>
+              </div>
+              <p style="color: var(--text-secondary);">Submit a cybercrime incident report</p>
+              <div class="code-block">
+                <code>{
+  "category": "phishing",
+  "description": "Suspicious email received...",
+  "evidence_urls": ["https://..."],
+  "severity": "medium"
+}</code>
+              </div>
+            </div>
+
+            <div class="endpoint-card glass-card">
+              <div style="margin-bottom: 1rem;">
+                <span class="endpoint-method get">GET</span>
+                <span class="endpoint-path">/statistics/uk</span>
+              </div>
+              <p style="color: var(--text-secondary);">Get UK cybersecurity statistics and trends</p>
+            </div>
+
+            <h2 style="margin: 2rem 0 1rem;">Rate Limits</h2>
+            <ul style="color: var(--text-secondary); padding-left: 1.5rem;">
+              <li style="margin-bottom: 0.5rem;">Free tier: 100 requests/day</li>
+              <li style="margin-bottom: 0.5rem;">Professional: 10,000 requests/day</li>
+              <li style="margin-bottom: 0.5rem;">Enterprise: Unlimited</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================
+           ABOUT US TAB
+           ===================================================== -->
+      <section id="about" class="tab-content">
+        <div class="about-hero glass-card">
+          <h1 class="about-title">About CyberSafe UK</h1>
+          <p class="about-subtitle">
+            Empowering individuals and organizations across the United Kingdom to stay safe in an increasingly connected
+            world.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card glass-card">
+            <div class="feature-icon">🛡️</div>
+            <h3 class="feature-title">Protection First</h3>
+            <p class="feature-desc">
+              We provide comprehensive resources and tools to help you protect your digital life from evolving cyber
+              threats.
+            </p>
+          </div>
+
+          <div class="feature-card glass-card">
+            <div class="feature-icon">🌐</div>
+            <h3 class="feature-title">Real-Time Intelligence</h3>
+            <p class="feature-desc">
+              Access live threat maps and real-time attack data to stay informed about the current cybersecurity
+              landscape.
+            </p>
+          </div>
+
+          <div class="feature-card glass-card">
+            <div class="feature-icon">📊</div>
+            <h3 class="feature-title">Data-Driven Insights</h3>
+            <p class="feature-desc">
+              Leveraging official UK government data and NCSC reports to provide accurate, actionable statistics.
+            </p>
+          </div>
+
+          <div class="feature-card glass-card">
+            <div class="feature-icon">🤝</div>
+            <h3 class="feature-title">Community Support</h3>
+            <p class="feature-desc">
+              Connecting victims with the right resources and reporting channels to ensure swift action.
+            </p>
+          </div>
+
+          <div class="feature-card glass-card">
+            <div class="feature-icon">📚</div>
+            <h3 class="feature-title">Education & Awareness</h3>
+            <p class="feature-desc">
+              Curated articles and guides covering all aspects of cybersecurity for individuals and businesses.
+            </p>
+          </div>
+
+          <div class="feature-card glass-card">
+            <div class="feature-icon">⚡</div>
+            <h3 class="feature-title">Rapid Response</h3>
+            <p class="feature-desc">
+              Quick access to emergency contacts and reporting tools when you need them most.
+            </p>
+          </div>
+        </div>
+
+        <!-- Partners Section -->
+        <div class="glass-card" style="padding: 3rem; text-align: center; margin-top: 2rem;">
+          <h2 style="margin-bottom: 2rem;">Our Data Sources & Partners</h2>
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; opacity: 0.7;">
+            <div style="padding: 1rem; background: var(--bg-card); border-radius: 12px;">NCSC</div>
+            <div style="padding: 1rem; background: var(--bg-card); border-radius: 12px;">Action Fraud</div>
+            <div style="padding: 1rem; background: var(--bg-card); border-radius: 12px;">ICO</div>
+            <div style="padding: 1rem; background: var(--bg-card); border-radius: 12px;">cyber.uk</div>
+            <div style="padding: 1rem; background: var(--bg-card); border-radius: 12px;">GOV.UK</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================
+           REPORT CRIME TAB
+           ===================================================== -->
+      <section id="report" class="tab-content">
+        <div class="report-section">
+          <div class="report-header">
+            <h1 class="report-title">🚨 Report Cybercrime</h1>
+            <p class="report-desc">
+              Help us fight cybercrime by reporting incidents. Your report helps protect others and track criminal
+              activity.
+            </p>
+          </div>
+
+          <div class="report-form glass-card">
+            <form onsubmit="submitReport(event)">
+
+              <!-- Progress Steps -->
+              <div class="form-progress">
+                <div class="progress-step active">
+                  <span class="progress-dot">1</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                  <span class="progress-dot">2</span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step">
+                  <span class="progress-dot">3</span>
+                </div>
+              </div>
+
+              <!-- Step 1: Category Selection -->
+              <div class="form-section active">
+                <h3 style="margin-bottom: 1.5rem;">What type of cybercrime are you reporting?</h3>
+
+                <div class="category-grid">
+                  <div class="category-option" onclick="selectCategory(this, 'phishing')">
+                    <div class="category-icon">🎣</div>
+                    <div class="category-name">Phishing & Email Scams</div>
+                  </div>
+
+                  <div class="category-option" onclick="selectCategory(this, 'fraud')">
+                    <div class="category-icon">💳</div>
+                    <div class="category-name">Online Fraud</div>
+                  </div>
+
+                  <div class="category-option" onclick="selectCategory(this, 'hacking')">
+                    <div class="category-icon">💻</div>
+                    <div class="category-name">Hacking & Unauthorized Access</div>
+                  </div>
+
+                  <div class="category-option" onclick="selectCategory(this, 'ransomware')">
+                    <div class="category-icon">🔐</div>
+                    <div class="category-name">Ransomware & Malware</div>
+                  </div>
+
+                  <div class="category-option" onclick="selectCategory(this, 'identity')">
+                    <div class="category-icon">🪪</div>
+                    <div class="category-name">Identity Theft</div>
+                  </div>
+
+                  <div class="category-option" onclick="selectCategory(this, 'harassment')">
+                    <div class="category-icon">😠</div>
+                    <div class="category-name">Online Harassment</div>
+                  </div>
+
+                  <div class="category-option" onclick="selectCategory(this, 'social')">
+                    <div class="category-icon">📱</div>
+                    <div class="category-name">Social Media Crimes</div>
+                  </div>
+
+                  <div class="category-option" onclick="selectCategory(this, 'other')">
+                    <div class="category-icon">❓</div>
+                    <div class="category-name">Other</div>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <span></span>
+                  <button type="button" class="btn btn-primary" onclick="nextFormStep()">
+                    Continue →
+                  </button>
+                </div>
+              </div>
+
+              <!-- Step 2: Details -->
+              <div class="form-section">
+                <h3 style="margin-bottom: 1.5rem;">Tell us more about the incident</h3>
+
+                <div class="form-group">
+                  <label class="form-label">When did this happen?</label>
+                  <input type="date" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Describe what happened</label>
+                  <textarea class="form-textarea" placeholder="Please provide as much detail as possible..."
+                    required></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Estimated financial loss (if any)</label>
+                  <input type="text" class="form-input" placeholder="£0.00">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Relevant URLs or emails (optional)</label>
+                  <input type="text" class="form-input" placeholder="https://suspicious-site.com">
+                </div>
+
+                <div class="form-actions">
+                  <button type="button" class="btn btn-secondary" onclick="prevFormStep()">
+                    ← Back
+                  </button>
+                  <button type="button" class="btn btn-primary" onclick="nextFormStep()">
+                    Continue →
+                  </button>
+                </div>
+              </div>
+
+              <!-- Step 3: Contact Info -->
+              <div class="form-section">
+                <h3 style="margin-bottom: 1.5rem;">Your Contact Information</h3>
+
+                <div class="form-group">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" class="form-input" placeholder="John Smith" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Email Address</label>
+                  <input type="email" class="form-input" placeholder="john@example.com" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Phone Number (optional)</label>
+                  <input type="tel" class="form-input" placeholder="+44 7xxx xxxxxx">
+                </div>
+
+                <div class="form-group">
+                  <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                    <input type="checkbox" required style="width: 20px; height: 20px;">
+                    <span style="font-size: 0.9rem; color: var(--text-secondary);">
+                      I confirm this information is accurate and I consent to being contacted about this report.
+                    </span>
+                  </label>
+                </div>
+
+                <div class="form-actions">
+                  <button type="button" class="btn btn-secondary" onclick="prevFormStep()">
+                    ← Back
+                  </button>
+                  <button type="submit" class="btn btn-primary">
+                    Submit Report 🚀
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          </div>
+
+          <!-- Alternative Reporting -->
+          <div class="glass-card" style="margin-top: 2rem; padding: 2rem;">
+            <h3 style="margin-bottom: 1rem;">📞 Prefer to Report by Phone?</h3>
+            <p style="color: var(--text-secondary);">
+              Contact Action Fraud directly at <a href="tel:03001232040"
+                style="color: var(--accent-primary); font-weight: 600;">0300 123 2040</a>
+              <br>
+              <small>Available Monday to Friday, 8am to 8pm</small>
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- =========================================================
+       FOOTER
+       ========================================================= -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>🛡️ CyberSafe UK</h4>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+          Your trusted resource for UK cybersecurity information and crime reporting.
+        </p>
+      </div>
+
+      <div class="footer-section">
+        <h4>Quick Links</h4>
+        <nav class="footer-links">
+          <a href="#" onclick="switchTab('home')">Home</a>
+          <a href="#" onclick="switchTab('threats')">Live Threats</a>
+          <a href="#" onclick="switchTab('report')">Report Crime</a>
+          <a href="#" onclick="switchTab('docs')">API Docs</a>
+        </nav>
+      </div>
+
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <nav class="footer-links">
+          <a href="https://www.ncsc.gov.uk" target="_blank">NCSC</a>
+          <a href="https://www.actionfraud.police.uk" target="_blank">Action Fraud</a>
+          <a href="https://cyber.uk" target="_blank">cyber.uk</a>
+          <a href="https://ico.org.uk" target="_blank">ICO</a>
+        </nav>
+      </div>
+
+      <div class="footer-section">
+        <h4>Emergency</h4>
+        <nav class="footer-links">
+          <a href="tel:999">🚨 999 (Emergency)</a>
+          <a href="tel:101">📞 101 (Non-Emergency)</a>
+          <a href="tel:03001232040">🛡️ Action Fraud</a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2026 CyberSafe UK. Data sourced from NCSC, Action Fraud, and GOV.UK.</p>
+    </div>
+  </footer>
+
+  <!-- Chatbot Widget -->
+  <div id="chatbot-widget" class="chatbot-widget">
+    <button class="chatbot-toggle" onclick="toggleChatbot()" title="Ask CyberSafe AI">
+      💬
+    </button>
+    <div class="chatbot-container hidden">
+      <div class="chatbot-header">
+        <span>🤖 CyberSafe AI</span>
+        <button class="chatbot-close" onclick="toggleChatbot()">×</button>
+      </div>
+      <div class="chatbot-messages" id="chatbot-messages">
+        <div class="chat-message bot">
+          <p>Hello! I'm your UK cybersecurity assistant. Ask me anything about cyber threats, protection, or reporting
+            crimes.</p>
+        </div>
+      </div>
+      <div class="chatbot-input">
+        <input type="text" id="chat-input" placeholder="Ask about cybersecurity..."
+          onkeypress="handleChatKeypress(event)">
+        <button onclick="sendChatMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="scripts/main.js"></script>
+  <script src="scripts/chatbot.js"></script>
 </body>
+
 </html>

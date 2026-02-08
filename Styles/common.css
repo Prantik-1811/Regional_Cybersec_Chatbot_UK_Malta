@@ -315,3 +315,47 @@ body {
     max-width: 85%;
   }
 }
+
+/* ===== CHAT ITEM ACTIONS ===== */
+.chat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chat-title {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat-actions {
+  display: none;
+  gap: 6px;
+}
+
+.chat-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--icon-color);
+  opacity: 0.7;
+}
+
+.chat-actions button:hover {
+  opacity: 1;
+}
+
+/* show actions on hover */
+.chat-list li:hover .chat-actions {
+  display: flex;
+}
+
+/* pinned visual */
+.chat-list li.pinned {
+  border-left: 3px solid var(--bg-user);
+  padding-left: 10px;
+}

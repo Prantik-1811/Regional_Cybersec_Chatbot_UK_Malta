@@ -98,7 +98,7 @@ function renderSidebar() {
     const actions = document.createElement("div");
     actions.className = "chat-actions";
 
-    // 📌 Pin / Unpin
+    //  Pin / Unpin
     const pinBtn = document.createElement("button");
     pinBtn.innerText = chat.pinned ? "📌" : "📍";
     pinBtn.title = chat.pinned ? "Unpin chat" : "Pin chat";
@@ -109,7 +109,7 @@ function renderSidebar() {
       renderSidebar();
     };
 
-    // 🗑️ Delete
+    //  Delete
     const delBtn = document.createElement("button");
     delBtn.innerText = "🗑️";
     delBtn.title = "Delete chat";
