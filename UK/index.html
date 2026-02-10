@@ -36,7 +36,7 @@
         <button class="nav-tab active" data-tab="home">Home</button>
         <button class="nav-tab" data-tab="threats">Live Threats</button>
         <button class="nav-tab" data-tab="centers">Report Centers</button>
-        <button class="nav-tab" data-tab="docs">API & Docs</button>
+        <button class="nav-tab" onclick="window.open('http://localhost:8001/docs', '_blank')">API & Docs</button>
         <button class="nav-tab" data-tab="about">About Us</button>
         <button class="nav-tab" data-tab="report">Report Crime</button>
       </nav>
@@ -103,36 +103,72 @@
           </div>
         </div>
 
-        <!-- Article Slider -->
-        <div class="slider-section">
-          <div class="section-header">
-            <h2 class="section-title">📰 Latest Cyber Security Insights</h2>
-            <div class="slider-controls">
-              <button class="slider-btn" onclick="prevSlide()">←</button>
-              <button class="slider-btn" onclick="nextSlide()">→</button>
-            </div>
-          </div>
+        <!-- =====================================================
+           NEWS & INSIGHTS (Dynamic Container)
+           ===================================================== -->
+        <section id="insights" class="slider-section">
+          <div class="container" id="news-container">
 
-          <div class="slider-container glass-card">
-            <div class="slider-track">
-              <!-- Slides will be dynamically loaded -->
-              <div class="slide">
-                <div class="article-card">
-                  <div class="article-content">
-                    <span class="article-tag">Loading...</span>
-                    <h2 class="article-title">Loading Articles</h2>
-                    <p class="article-excerpt">Please wait while we load the latest cybersecurity insights...</p>
+            <!-- VIEW 1: Article Feed Grid -->
+            <div id="news-feed">
+              <div class="section-header">
+                <h2 class="section-title">📰 Cyber Security Knowledge Base</h2>
+                <p class="section-subtitle">Browse articles scraped from UK cybersecurity sources</p>
+              </div>
+
+              <!-- Category Filter Bar -->
+              <div class="category-filter" id="category-filter">
+                <button class="filter-btn active" onclick="filterArticles('all')">All</button>
+                <!-- Dynamically populated by JS -->
+              </div>
+
+              <!-- Article Grid -->
+              <div class="article-grid" id="article-grid">
+                <!-- Populated by JS -->
+              </div>
+
+              <!-- Load More -->
+              <div class="load-more-container" id="load-more-container" style="display:none;">
+                <button class="load-more-btn" onclick="loadMoreArticles()">Load More Articles</button>
+              </div>
+            </div>
+
+            <!-- VIEW 2: Article Reader (Hidden by default) -->
+            <div id="article-viewer" class="hidden">
+              <button onclick="closeArticle()" class="back-btn">
+                ← Back to Articles
+              </button>
+
+              <article class="article-full glass-card">
+                <header class="article-header">
+                  <span class="article-tag" id="viewer-tag">Category</span>
+                  <h1 class="article-title-large" id="viewer-title">Article Title</h1>
+                  <div class="article-meta">
+                    <span id="viewer-source">Source</span>
                   </div>
-                  <div class="article-visual">🔄</div>
+                </header>
+
+                <div class="article-body" id="viewer-content">
+                  <!-- Full Content Injected Here -->
+                </div>
+
+                <footer class="article-footer">
+                  <a id="viewer-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary">🔗 View
+                    Original Source</a>
+                </footer>
+              </article>
+
+              <!-- Suggested Articles -->
+              <div class="suggested-section">
+                <h3 class="suggested-title">📚 Related Articles</h3>
+                <div class="suggested-grid" id="suggested-articles">
+                  <!-- Populated by JS -->
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="slider-dots">
-            <!-- Dots will be dynamically generated -->
           </div>
-        </div>
+        </section>
 
         <!-- Quick Actions -->
         <div class="stats-grid" style="margin-top: 3rem;">
@@ -761,7 +797,7 @@
           <a href="#" onclick="switchTab('home')">Home</a>
           <a href="#" onclick="switchTab('threats')">Live Threats</a>
           <a href="#" onclick="switchTab('report')">Report Crime</a>
-          <a href="#" onclick="switchTab('docs')">API Docs</a>
+          <a href="http://localhost:8001/docs" target="_blank">API Docs</a>
         </nav>
       </div>
 
@@ -813,6 +849,8 @@
       </div>
     </div>
   </div>
+
+
 
   <!-- Scripts -->
   <script src="scripts/main.js"></script>

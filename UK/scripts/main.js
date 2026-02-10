@@ -8,10 +8,11 @@
 // =========================================================
 const state = {
   currentTab: 'home',
-  currentSlide: 0,
   articles: [],
-  theme: localStorage.getItem('theme') || 'dark',
-  sliderInterval: null
+  filteredArticles: [],
+  visibleCount: 9,
+  currentFilter: 'all',
+  theme: localStorage.getItem('theme') || 'dark'
 };
 
 // =========================================================
@@ -66,19 +67,19 @@ function switchTab(tabId) {
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.tab === tabId);
   });
-  
+
   // Update content sections
   document.querySelectorAll('.tab-content').forEach(content => {
     content.classList.toggle('active', content.id === tabId);
   });
-  
+
   state.currentTab = tabId;
-  
+
   // Re-trigger counter animation if switching to home
   if (tabId === 'home') {
     initCounters();
   }
-  
+
   // Re-init map if switching to threats
   if (tabId === 'threats') {
     startAttackSimulation();
@@ -86,154 +87,265 @@ function switchTab(tabId) {
 }
 
 // =========================================================
-// ARTICLE SLIDER
+// ARTICLE GRID
 // =========================================================
 async function loadArticles() {
   try {
-    const response = await fetch('../cyber_chatbot_UK1.json');
+    const response = await fetch('http://localhost:8001/api/articles?limit=50');
     const data = await response.json();
-    
-    // Process and extract unique articles
-    state.articles = processArticles(data);
-    renderSlider();
-    startSliderAutoplay();
+    const rawArticles = data.articles || (Array.isArray(data) ? data : []);
+    state.articles = processArticles(rawArticles);
+    state.filteredArticles = [...state.articles];
+    renderCategoryFilters();
+    renderArticleGrid();
   } catch (error) {
     console.error('Error loading articles:', error);
-    renderFallbackSlider();
+    renderFallbackGrid();
   }
 }
 
 function processArticles(data) {
-  // Extract meaningful articles with titles
   const articles = [];
   const seenUrls = new Set();
-  
+
   data.forEach(item => {
-    if (item.url && !seenUrls.has(item.url) && item.content) {
-      seenUrls.add(item.url);
-      
-      // Extract title from URL or content
-      const urlParts = item.url.split('/').filter(p => p);
-      const titleFromUrl = urlParts[urlParts.length - 1] || 'Cyber Security';
-      const title = titleFromUrl
+    const content = item.full_content || item.content || '';
+    if (!item.url || seenUrls.has(item.url) || !content) return;
+    seenUrls.add(item.url);
+
+    let title = item.title || '';
+    if (!title || title === 'Unknown' || title === item.url) {
+      const parts = item.url.split('/').filter(p => p);
+      title = (parts[parts.length - 1] || 'Cyber Security')
         .replace(/-/g, ' ')
         .replace(/\b\w/g, l => l.toUpperCase());
-      
-      // Get excerpt
-      const excerpt = item.content.substring(0, 250).trim() + '...';
-      
-      // Assign category icon based on content
-      let icon = '🔒';
-      if (item.url.includes('physical')) icon = '🏢';
-      else if (item.url.includes('technical')) icon = '💻';
-      else if (item.url.includes('human')) icon = '👥';
-      else if (item.url.includes('iot')) icon = '📱';
-      else if (item.url.includes('threat')) icon = '⚠️';
-      else if (item.url.includes('attack')) icon = '🎯';
-      else if (item.url.includes('malware')) icon = '🦠';
-      else if (item.url.includes('hacker')) icon = '🕵️';
-      else if (item.url.includes('career')) icon = '💼';
-      
-      articles.push({
-        title,
-        excerpt,
-        url: item.url,
-        icon,
-        category: getCategoryFromUrl(item.url)
-      });
     }
+
+    const category = item.category || getCategoryFromUrl(item.url);
+    const excerpt = item.excerpt || content.substring(0, 200) + '...';
+    const icon = getCategoryIcon(category);
+
+    articles.push({ title, excerpt, url: item.url, icon, category, full_content: content });
   });
-  
-  // Return top 8 articles for slider
-  return articles.slice(0, 8);
+
+  return articles;
 }
 
 function getCategoryFromUrl(url) {
-  if (url.includes('physical')) return 'Physical Security';
-  if (url.includes('technical')) return 'Technical Security';
-  if (url.includes('human')) return 'Human Security';
-  if (url.includes('iot')) return 'IoT Security';
-  if (url.includes('threat')) return 'Threat Intelligence';
-  if (url.includes('career')) return 'Careers';
+  const u = url.toLowerCase();
+  if (u.includes('physical')) return 'Physical Security';
+  if (u.includes('technical')) return 'Technical Security';
+  if (u.includes('human')) return 'Human Security';
+  if (u.includes('iot') || u.includes('internet-of-things')) return 'IoT Security';
+  if (u.includes('threat')) return 'Threat Intelligence';
+  if (u.includes('career')) return 'Careers';
+  if (u.includes('social-engineering') || u.includes('scam')) return 'Social Engineering';
+  if (u.includes('hacker') || u.includes('nation-state')) return 'Threat Actors';
+  if (u.includes('attack') || u.includes('supply-chain')) return 'Attack Vectors';
+  if (u.includes('vulnerabilit')) return 'Vulnerabilities';
+  if (u.includes('cryptograph') || u.includes('quantum')) return 'Cryptography';
+  if (u.includes('governance') || u.includes('protection')) return 'Governance';
   return 'Cyber Security';
 }
 
-function renderSlider() {
-  const track = document.querySelector('.slider-track');
-  const dotsContainer = document.querySelector('.slider-dots');
-  
-  if (!track || !state.articles.length) return;
-  
-  track.innerHTML = state.articles.map((article, index) => `
-    <div class="slide">
-      <div class="article-card glass-card">
-        <div class="article-content">
-          <span class="article-tag">${article.category}</span>
-          <h2 class="article-title">${article.title}</h2>
-          <p class="article-excerpt">${article.excerpt}</p>
-          <a href="${article.url}" target="_blank" class="article-link">
-            Read More <span>→</span>
-          </a>
+function getCategoryIcon(category) {
+  const icons = {
+    'Physical Security': '🏢', 'Technical Security': '💻', 'Human Security': '👥',
+    'IoT Security': '📱', 'Threat Intelligence': '⚠️', 'Careers': '💼',
+    'Social Engineering': '🎭', 'Threat Actors': '🕵️', 'Attack Vectors': '🎯',
+    'Vulnerabilities': '🛡️', 'Cryptography': '🔐', 'Governance': '📋',
+    'Malware': '🦠', 'Cyber Security': '🔒'
+  };
+  return icons[category] || '🔒';
+}
+
+function renderCategoryFilters() {
+  const filterBar = document.getElementById('category-filter');
+  if (!filterBar) return;
+
+  const categories = [...new Set(state.articles.map(a => a.category))];
+  filterBar.innerHTML =
+    `<button class="filter-btn active" onclick="filterArticles('all')">All (${state.articles.length})</button>` +
+    categories.map(cat => {
+      const count = state.articles.filter(a => a.category === cat).length;
+      return `<button class="filter-btn" onclick="filterArticles('${cat}')">${getCategoryIcon(cat)} ${cat} (${count})</button>`;
+    }).join('');
+}
+
+function filterArticles(category) {
+  state.currentFilter = category;
+  state.visibleCount = 9;
+
+  if (category === 'all') {
+    state.filteredArticles = [...state.articles];
+  } else {
+    state.filteredArticles = state.articles.filter(a => a.category === category);
+  }
+
+  // Update active filter button
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    const isAll = category === 'all' && btn.textContent.startsWith('All');
+    const isMatch = !isAll && btn.textContent.includes(category);
+    btn.classList.toggle('active', isAll || isMatch);
+  });
+
+  renderArticleGrid();
+}
+
+function renderArticleGrid() {
+  const grid = document.getElementById('article-grid');
+  const loadMoreContainer = document.getElementById('load-more-container');
+  if (!grid) return;
+
+  const visible = state.filteredArticles.slice(0, state.visibleCount);
+
+  if (visible.length === 0) {
+    grid.innerHTML = '<div class="no-articles"><p>🔍 No articles found for this category.</p></div>';
+    if (loadMoreContainer) loadMoreContainer.style.display = 'none';
+    return;
+  }
+
+  grid.innerHTML = visible.map((article, idx) => {
+    const originalIndex = state.articles.indexOf(article);
+    const isHero = idx === 0;
+    let hostname = '';
+    try { hostname = new URL(article.url).hostname; } catch (e) { hostname = 'source'; }
+
+    return `
+      <div class="article-card-grid ${isHero ? 'hero-card' : ''}" onclick="openArticle(${originalIndex})">
+        <div class="card-icon-area">
+          <span class="card-icon">${article.icon}</span>
+          <span class="card-category">${article.category}</span>
         </div>
-        <div class="article-visual">
-          ${article.icon}
+        <div class="card-body">
+          <h3 class="card-title">${article.title}</h3>
+          <p class="card-excerpt">${article.excerpt}</p>
         </div>
+        <div class="card-footer">
+          <span class="card-source">${hostname}</span>
+          <span class="card-read-btn">Read Article →</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (loadMoreContainer) {
+    loadMoreContainer.style.display = state.filteredArticles.length > state.visibleCount ? 'flex' : 'none';
+  }
+}
+
+function loadMoreArticles() {
+  state.visibleCount += 9;
+  renderArticleGrid();
+}
+
+function renderFallbackGrid() {
+  state.articles = [
+    { title: 'Areas of Cyber Security', excerpt: 'Cyber security is made up of three main areas - physical, technical and human.', icon: '🔒', category: 'Cyber Security', url: 'https://cyber.uk', full_content: 'Cyber security is made up of three main areas - physical, technical and human. Understanding all three is essential.' },
+    { title: 'Physical Cyber Security', excerpt: 'Physical security continues to be crucial to cyber information safety.', icon: '🏢', category: 'Physical Security', url: 'https://cyber.uk/physical', full_content: 'Physical security has been important long before cyber security.' },
+    { title: 'Technical Cyber Security', excerpt: 'Technical security covers antivirus, ethical hacking, and vulnerability assessments.', icon: '💻', category: 'Technical Security', url: 'https://cyber.uk/technical', full_content: 'Technical cyber security involves protecting ourselves digitally.' },
+    { title: 'Human Cyber Security', excerpt: 'People play a crucial role in their own cyber security.', icon: '👥', category: 'Human Security', url: 'https://cyber.uk/human', full_content: 'Awareness-raising is key to the human side of security.' }
+  ];
+  state.filteredArticles = [...state.articles];
+  renderCategoryFilters();
+  renderArticleGrid();
+}
+
+// =========================================================
+// ARTICLE READER (IN-PLACE)
+// =========================================================
+
+function openArticle(index) {
+  const article = state.articles[index];
+  if (!article) return;
+
+  const feedView = document.getElementById('news-feed');
+  const readerView = document.getElementById('article-viewer');
+
+  // Populate header
+  document.getElementById('viewer-tag').textContent = article.category;
+  document.getElementById('viewer-title').textContent = article.title;
+
+  // Source domain label
+  try {
+    document.getElementById('viewer-source').textContent = new URL(article.url).hostname;
+  } catch (e) {
+    document.getElementById('viewer-source').textContent = 'Source';
+  }
+
+  // Format content into readable paragraphs
+  const rawContent = article.full_content || article.excerpt;
+  const sentences = rawContent.split(/(?<=\.)\s+/);
+  const paragraphs = [];
+  let currentParagraph = [];
+
+  sentences.forEach((sentence, i) => {
+    currentParagraph.push(sentence);
+    if (currentParagraph.length >= 3 || i === sentences.length - 1) {
+      paragraphs.push(currentParagraph.join(' '));
+      currentParagraph = [];
+    }
+  });
+
+  document.getElementById('viewer-content').innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+
+  // Set the ACTUAL external source URL
+  const viewerLink = document.getElementById('viewer-link');
+  viewerLink.href = article.url;
+  viewerLink.setAttribute('target', '_blank');
+  viewerLink.setAttribute('rel', 'noopener noreferrer');
+
+  // Render suggested articles
+  renderSuggestedArticles(index);
+
+  // Switch views
+  feedView.classList.add('hidden');
+  readerView.classList.remove('hidden');
+
+  // Scroll to top of section
+  const section = document.getElementById('insights');
+  if (section) section.scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderSuggestedArticles(currentIndex) {
+  const container = document.getElementById('suggested-articles');
+  if (!container) return;
+
+  const current = state.articles[currentIndex];
+  let related = state.articles
+    .map((a, i) => ({ ...a, _idx: i }))
+    .filter(a => a._idx !== currentIndex);
+
+  // Sort: same-category articles first
+  related.sort((a, b) => {
+    const aMatch = a.category === current.category ? 0 : 1;
+    const bMatch = b.category === current.category ? 0 : 1;
+    return aMatch - bMatch;
+  });
+
+  const suggestions = related.slice(0, 3);
+
+  container.innerHTML = suggestions.map(article => `
+    <div class="suggested-card glass-card" onclick="openArticle(${article._idx})">
+      <span class="card-icon-small">${article.icon}</span>
+      <div class="suggested-info">
+        <span class="card-category-small">${article.category}</span>
+        <h4 class="suggested-card-title">${article.title}</h4>
       </div>
     </div>
   `).join('');
-  
-  // Render dots
-  if (dotsContainer) {
-    dotsContainer.innerHTML = state.articles.map((_, index) => `
-      <button class="slider-dot ${index === 0 ? 'active' : ''}" onclick="goToSlide(${index})"></button>
-    `).join('');
-  }
 }
 
-function renderFallbackSlider() {
-  const fallbackArticles = [
-    { title: 'Areas of Cyber Security', excerpt: 'Cyber security is made up of three main areas - physical, technical and human. Understanding all three is essential for comprehensive protection.', icon: '🔒', category: 'Overview', url: '#' },
-    { title: 'Physical Cyber Security', excerpt: 'Physical security has been important long before cyber security and continues to be crucial to the safety of cyber information today.', icon: '🏢', category: 'Physical Security', url: '#' },
-    { title: 'Technical Cyber Security', excerpt: 'Technical cyber security involves protecting ourselves digitally through antivirus software, ethical hacking, and vulnerability assessments.', icon: '💻', category: 'Technical Security', url: '#' },
-    { title: 'Human Cyber Security', excerpt: 'People play a crucial role in their own cyber security as well as that of others. Awareness-raising is key to the human side of security.', icon: '👥', category: 'Human Security', url: '#' }
-  ];
-  
-  state.articles = fallbackArticles;
-  renderSlider();
-  startSliderAutoplay();
-}
+function closeArticle() {
+  const feedView = document.getElementById('news-feed');
+  const readerView = document.getElementById('article-viewer');
 
-function goToSlide(index) {
-  state.currentSlide = index;
-  updateSlider();
-}
+  readerView.classList.add('hidden');
+  feedView.classList.remove('hidden');
 
-function nextSlide() {
-  state.currentSlide = (state.currentSlide + 1) % state.articles.length;
-  updateSlider();
-}
-
-function prevSlide() {
-  state.currentSlide = (state.currentSlide - 1 + state.articles.length) % state.articles.length;
-  updateSlider();
-}
-
-function updateSlider() {
-  const track = document.querySelector('.slider-track');
-  const dots = document.querySelectorAll('.slider-dot');
-  
-  if (track) {
-    track.style.transform = `translateX(-${state.currentSlide * 100}%)`;
-  }
-  
-  dots.forEach((dot, index) => {
-    dot.classList.toggle('active', index === state.currentSlide);
-  });
-}
-
-function startSliderAutoplay() {
-  if (state.sliderInterval) clearInterval(state.sliderInterval);
-  state.sliderInterval = setInterval(nextSlide, 6000);
+  // Scroll back to feed
+  const section = document.getElementById('insights');
+  if (section) section.scrollIntoView({ behavior: 'smooth' });
 }
 
 // =========================================================
@@ -241,15 +353,15 @@ function startSliderAutoplay() {
 // =========================================================
 function initCounters() {
   const counters = document.querySelectorAll('[data-counter]');
-  
+
   counters.forEach(counter => {
     const target = parseInt(counter.dataset.counter);
     const duration = 2000;
     const step = target / (duration / 16);
     let current = 0;
-    
+
     counter.textContent = '0';
-    
+
     const updateCounter = () => {
       current += step;
       if (current < target) {
@@ -259,7 +371,7 @@ function initCounters() {
         counter.textContent = formatNumber(target);
       }
     };
-    
+
     // Start animation when element is visible
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -269,7 +381,7 @@ function initCounters() {
         }
       });
     }, { threshold: 0.5 });
-    
+
     observer.observe(counter);
   });
 }
@@ -317,7 +429,7 @@ function startAttackSimulation() {
   setInterval(() => {
     simulateAttack();
   }, 2000 + Math.random() * 2000);
-  
+
   // Initial attacks
   for (let i = 0; i < 5; i++) {
     setTimeout(() => simulateAttack(), i * 500);
@@ -327,17 +439,17 @@ function startAttackSimulation() {
 function simulateAttack() {
   const sourceIndex = Math.floor(Math.random() * attackCountries.length);
   const targetIndex = Math.floor(Math.random() * attackCountries.length);
-  
+
   if (sourceIndex === targetIndex) return;
-  
+
   const source = attackCountries[sourceIndex];
   const target = attackCountries[targetIndex];
   const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
-  
+
   // Update stats
   attackStats.total++;
   attackType.count++;
-  
+
   // 70% chance of being blocked
   if (Math.random() < 0.7) {
     attackStats.blocked++;
@@ -345,7 +457,7 @@ function simulateAttack() {
     attackStats.active++;
     setTimeout(() => attackStats.active--, 5000);
   }
-  
+
   // Create attack visual
   createAttackLine(source, target, attackType.color);
   updateThreatStats();
@@ -354,7 +466,7 @@ function simulateAttack() {
 function createAttackLine(source, target, color) {
   const container = document.querySelector('.attack-lines');
   if (!container) return;
-  
+
   const line = document.createElement('div');
   line.className = 'attack-animation';
   line.style.cssText = `
@@ -370,9 +482,9 @@ function createAttackLine(source, target, color) {
     --targetX: ${target.x - source.x}%;
     --targetY: ${target.y - source.y}%;
   `;
-  
+
   container.appendChild(line);
-  
+
   // Remove after animation
   setTimeout(() => line.remove(), 1500);
 }
@@ -383,11 +495,11 @@ function updateThreatStats() {
     blocked: document.querySelector('[data-stat="blocked"]'),
     active: document.querySelector('[data-stat="active"]')
   };
-  
+
   if (elements.total) elements.total.textContent = formatNumber(attackStats.total);
   if (elements.blocked) elements.blocked.textContent = formatNumber(attackStats.blocked);
   if (elements.active) elements.active.textContent = attackStats.active;
-  
+
   // Update attack type list
   const typeList = document.querySelector('.threat-type-list');
   if (typeList) {
@@ -418,7 +530,7 @@ function selectCategory(element, category) {
   document.querySelectorAll('.category-option').forEach(opt => {
     opt.classList.remove('selected');
   });
-  
+
   // Add selection to clicked element
   element.classList.add('selected');
   selectedCategory = category;
@@ -429,7 +541,7 @@ function nextFormStep() {
     alert('Please select a crime category');
     return;
   }
-  
+
   if (currentFormStep < 3) {
     currentFormStep++;
     updateFormProgress();
@@ -465,7 +577,7 @@ function showFormStep(step) {
 
 function submitReport(event) {
   event.preventDefault();
-  
+
   // Show success message
   const form = document.querySelector('.report-form');
   form.innerHTML = `

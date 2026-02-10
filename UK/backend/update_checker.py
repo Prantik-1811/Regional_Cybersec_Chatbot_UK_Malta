@@ -58,19 +58,46 @@ class UpdateChecker:
         """Generate MD5 hash of content."""
         return hashlib.md5(content.encode('utf-8')).hexdigest()
     
-    def _extract_title(self, html_content: str, url: str) -> str:
-        """Extract title from HTML content or URL."""
+    def _extract_title(self, content: str, url: str) -> str:
+        """Extract title from content (HTML or plain text) or URL."""
+        # Try HTML parsing first
         try:
-            soup = BeautifulSoup(html_content, 'html.parser')
+            soup = BeautifulSoup(content, 'html.parser')
             title_tag = soup.find('title')
-            if title_tag:
+            if title_tag and title_tag.text.strip():
                 return title_tag.text.strip()[:100]
             h1_tag = soup.find('h1')
-            if h1_tag:
+            if h1_tag and h1_tag.text.strip():
                 return h1_tag.text.strip()[:100]
         except:
             pass
-        return url.split('/')[-1] or "Unknown"
+        
+        # Plain text: use first meaningful line or sentence
+        if content:
+            # Split by newlines, take first non-empty line that's title-like
+            for line in content.split('\n'):
+                line = line.strip()
+                # Good title: 10-120 chars, doesn't start with common non-title patterns
+                if 10 < len(line) < 120 and not line.startswith(('Home /', 'http', 'www.', '©')):
+                    return line
+            # Fallback: first sentence
+            first_sentence = content.split('.')[0].strip()
+            if 10 < len(first_sentence) < 150:
+                return first_sentence
+        
+        # URL-based fallback
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        path = parsed.path.strip('/')
+        if path:
+            # Take last meaningful path segment
+            segment = path.split('/')[-1]
+            title = segment.replace('-', ' ').replace('_', ' ')
+            return title.title()[:100]
+        
+        # Last resort: use domain
+        domain = parsed.netloc.replace('www.', '')
+        return domain or "Unknown"
     
     def is_ready(self) -> bool:
         """Check if update checker is ready."""
@@ -139,15 +166,72 @@ class UpdateChecker:
         self._save_cache()
         return updates
     
-    def get_articles(self, limit: int = 10) -> List[dict]:
+    def _get_category(self, url: str) -> str:
+        """Derive category from URL path."""
+        url_lower = url.lower()
+        if 'physical' in url_lower: return 'Physical Security'
+        if 'technical' in url_lower: return 'Technical Security'
+        if 'human' in url_lower: return 'Human Security'
+        if 'iot' in url_lower or 'internet-of-things' in url_lower: return 'IoT Security'
+        if 'threat' in url_lower: return 'Threat Intelligence'
+        if 'career' in url_lower: return 'Careers'
+        if 'malware' in url_lower or 'ransomware' in url_lower: return 'Malware'
+        if 'social-engineering' in url_lower or 'scam' in url_lower: return 'Social Engineering'
+        if 'hacker' in url_lower or 'nation-state' in url_lower: return 'Threat Actors'
+        if 'attack' in url_lower or 'supply-chain' in url_lower: return 'Attack Vectors'
+        if 'vulnerabilit' in url_lower: return 'Vulnerabilities'
+        if 'cryptograph' in url_lower or 'quantum' in url_lower: return 'Cryptography'
+        if 'governance' in url_lower or 'protection' in url_lower: return 'Governance'
+        return 'Cyber Security'
+
+    def _clean_content(self, content: str) -> str:
+        """Remove repeated breadcrumb-like prefixes from scraped content."""
+        if not content:
+            return ''
+        # Many scraped pages have the content repeated multiple times
+        # Take only first occurrence (up to ~40% of total) to avoid duplication
+        half = len(content) // 3
+        if half > 500:
+            content = content[:half]
+        # Strip leading "Home / ..." breadcrumb
+        import re
+        content = re.sub(r'^(Home\s*/\s*.*?(?:\n|(?=[A-Z][a-z])))', '', content, count=1).strip()
+        return content
+
+    def _generate_excerpt(self, content: str, max_len: int = 200) -> str:
+        """Generate a clean excerpt from content."""
+        clean = self._clean_content(content)
+        # Find first sentence that's meaningful (>30 chars)
+        sentences = clean.split('.')
+        excerpt_parts = []
+        total = 0
+        for s in sentences:
+            s = s.strip()
+            if len(s) > 20 and total + len(s) < max_len:
+                excerpt_parts.append(s)
+                total += len(s)
+        return '. '.join(excerpt_parts) + '...' if excerpt_parts else clean[:max_len] + '...'
+
+    def get_articles(self, limit: int = 50) -> List[dict]:
         """Get articles from loaded sources for display."""
         articles = []
+        seen_titles = set()
         for source in self.sources[:limit]:
-            content = source.get('content', '')[:300]
+            content = source.get('content', '')
+            url = source.get('url', '')
+            if not content or not url:
+                continue
+            title = self._extract_title(content, url)
+            # Skip duplicates by title
+            if title in seen_titles:
+                continue
+            seen_titles.add(title)
             articles.append({
-                'url': source.get('url', ''),
-                'title': self._extract_title(content, source.get('url', '')),
-                'excerpt': content,
+                'url': url,
+                'title': title,
+                'excerpt': self._generate_excerpt(content),
+                'full_content': self._clean_content(content),
+                'category': self._get_category(url),
                 'type': source.get('type', 'html')
             })
         return articles

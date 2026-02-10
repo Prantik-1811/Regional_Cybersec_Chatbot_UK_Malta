@@ -47,7 +47,7 @@ def ingest_json_data(collection, json_path: str, region: str = "UK"):
         if title == '' or title == 'Https:':
             title = f"UK Cybersecurity Article {i + 1}"
         
-        doc_id = f"{region}_{i}"
+        doc_id = f"{region}_{path.stem}_{i}"
         ids.append(doc_id)
         documents.append(f"{title}\n\n{content}")
         metadatas.append({

@@ -56,63 +56,29 @@ class RAGPipeline:
     def query(self, query_text: str, region: str = "UK"):
         """Query the knowledge base and generate a response."""
         
-        # Search for relevant documents
-        results = self.collection.query(
-            query_texts=[query_text],
-            n_results=5,
-            where={"region": region} if region else None
-        )
+        # DIRECT OLLAMA CHAT (No RAG)
+        # We are skipping vector search to let the model use its own knowledge.
         
-        if not results['documents'] or not results['documents'][0]:
-            return (
-                "I can only answer using official UK cybersecurity information. "
-                "No relevant data was found. Please run ingest.py first.",
-                []
-            )
+        # Static sources for general reference
+        sources = [
+            {"url": "https://www.ncsc.gov.uk", "title": "National Cyber Security Centre (NCSC)", "type": "official"},
+            {"url": "https://www.actionfraud.police.uk", "title": "Action Fraud", "type": "official"}
+        ]
         
-        documents = results['documents'][0]
-        metadatas = results['metadatas'][0]
-        distances = results['distances'][0]
+        answer = ""
         
-        # Build context with relevant sources
-        RELEVANCE_THRESHOLD = 1.2
-        context_parts = []
-        sources = []
-        
-        for i, doc in enumerate(documents):
-            distance = distances[i]
-            meta = metadatas[i]
-            
-            if distance < RELEVANCE_THRESHOLD:
-                source_num = len(sources) + 1
-                title = meta.get('title', 'Unknown')
-                context_parts.append(f"[Source {source_num}] {title}\nContent: {doc}")
-                sources.append({
-                    "title": title,
-                    "url": meta.get('source_url', ''),
-                    "region": meta.get('region', 'UK')
-                })
-        
-        context = "\n\n".join(context_parts)
-        
-        if not context:
-            return (
-                "I can only answer using official UK cybersecurity information. "
-                "No relevant data was found.",
-                []
-            )
-        
-        # Generate response with LLM
         if self.llm:
             prompt = self.ChatPromptTemplate.from_template("""
-                You are a UK cybersecurity expert assistant.
-                Answer the user's question strictly based on the provided context from official government sources.
+                You are "CyberSafe AI", a friendly and knowledgeable UK cybersecurity expert assistant.
                 
-                IMPORTANT: Cite sources using [1], [2], etc.
-                If the answer is not in the context, say so.
+                Your goal is to have a natural, helpful conversation with the user about online safety and cyber threats.
                 
-                Context:
-                {context}
+                IMPORTANT:
+                - Be conversational, empathetic, and clear.
+                - Use British English spelling (e.g., 'organisation', 'defence', 'behaviour').
+                - You can discuss any cybersecurity topic freely using your own knowledge.
+                - If asked about reporting a crime, always recommend Action Fraud.
+                - Keep your answers concise and easy to read.
                 
                 Question: {question}
                 
@@ -121,11 +87,17 @@ class RAGPipeline:
             
             try:
                 chain = prompt | self.llm
-                response = chain.invoke({"context": context, "question": query_text})
+                response = chain.invoke({"question": query_text})
                 answer = response.content
             except Exception as e:
-                answer = f"**AI Unavailable**\n\n{context}"
+                answer = (
+                    "I'm having a bit of trouble connecting to my creative brain right now. "
+                    "However, for official advice, please visit the NCSC website at ncsc.gov.uk."
+                )
         else:
-            answer = f"**Ollama not running**\n\nRelevant information:\n\n{context}"
-        
+            answer = (
+                "I see that my local AI engine isn't running, so I can't chat right now. "
+                "Please ensure Ollama is setup and running."
+            )
+            
         return answer, sources

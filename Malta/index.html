@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Malta Regional Chatbot</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="../Styles/common.css">
-  <link rel="stylesheet" href="../Styles/Malta.css">
+  <link rel="stylesheet" href="Styles/common.css">
+  <link rel="stylesheet" href="Styles/Malta.css">
 </head>
 
 <body>
@@ -19,9 +20,9 @@
       <h3>Chat History</h3>
       <ul class="chat-list" id="chatList"></ul>
 
-    <button class="new-chat-btn" onclick="createNewChat()">
-      + New Chat
-    </button>
+      <button class="new-chat-btn" onclick="createNewChat()">
+        + New Chat
+      </button>
 
       </ul>
     </aside>
@@ -49,12 +50,7 @@
 
       <!-- INPUT BAR -->
       <div class="input-bar">
-        <input
-          type="text"
-          id="chatInput"
-          placeholder="Type your message..."
-          onkeydown="handleEnter(event)"
-        />
+        <input type="text" id="chatInput" placeholder="Type your message..." onkeydown="handleEnter(event)" />
         <button onclick="sendMessage()">Send</button>
       </div>
 
@@ -62,7 +58,7 @@
   </div>
 
   <!-- JS -->
-  <script src="../Scripts/chat.js"></script>
+  <script src="Scripts/chat.js"></script>
 
   <!-- Sidebar toggle helper -->
   <script>
@@ -72,4 +68,5 @@
   </script>
 
 </body>
+
 </html>
