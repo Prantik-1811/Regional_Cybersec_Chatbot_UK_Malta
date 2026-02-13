@@ -1,40 +1,56 @@
 /**
  * UK Cybersecurity Website - Main JavaScript
- * Handles navigation, theme toggle, article slider, counters, and more
+ * 
+ * This file orchestrates the core functionality of the website, including:
+ * - SPA-like Navigation (switching tabs)
+ * - Theme Management (Dark/Light mode)
+ * - fetching and displaying news articles
+ * - Animated Counters
+ * - Live Threat Map Simulation
+ * - Crime Reporting Form Logic
  */
 
 // =========================================================
-// GLOBAL STATE
+// GLOBAL STATE MANAGEMENT
 // =========================================================
 const state = {
-  currentTab: 'home',
-  articles: [],
-  filteredArticles: [],
-  visibleCount: 9,
-  currentFilter: 'all',
-  theme: localStorage.getItem('theme') || 'dark'
+  currentTab: 'home',       // Currently active tab
+  articles: [],             // All loaded articles
+  filteredArticles: [],     // Articles currently visible after filtering
+  visibleCount: 9,          // Pagination limit
+  currentFilter: 'all',     // Current category filter
+  theme: localStorage.getItem('theme') || 'dark' // Persisted theme preference
 };
 
 // =========================================================
 // INITIALIZATION
 // =========================================================
+// Hook into DOMContentLoaded to start the application
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initNavigation();
-  loadArticles();
-  initCounters();
-  initAttackMap();
-  initReportForm();
+  loadArticles(); // Fetch news
+  initCounters(); // Start number animations
+  initAttackMap(); // Prepare map stats
+  initReportForm(); // Reset form state
 });
 
 // =========================================================
-// THEME TOGGLE
+// THEME MODULE
 // =========================================================
+
+/**
+ * Applies the saved theme on startup.
+ */
 function initTheme() {
   document.documentElement.setAttribute('data-theme', state.theme);
   updateThemeIcon();
 }
 
+/**
+ * Toggles between light and dark modes.
+ * Saves preference to localStorage.
+ */
 function toggleTheme() {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', state.theme);
@@ -42,6 +58,9 @@ function toggleTheme() {
   updateThemeIcon();
 }
 
+/**
+ * Updates the theme toggle button icon based on current state.
+ */
 function updateThemeIcon() {
   const btn = document.querySelector('.theme-toggle');
   if (btn) {
@@ -50,77 +69,110 @@ function updateThemeIcon() {
 }
 
 // =========================================================
-// NAVIGATION
+// NAVIGATION MODULE
 // =========================================================
+
+/**
+ * Sets up event listeners for navigation tabs.
+ */
 function initNavigation() {
   const tabs = document.querySelectorAll('.nav-tab');
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
+      // Ignore external links (like API docs) that reuse the nav-tab class
+      if (!tab.dataset.tab) return;
+
       const tabId = tab.dataset.tab;
       switchTab(tabId);
     });
   });
 }
 
+/**
+ * Switches the active view (tab).
+ * Handles visibility toggling and specific initialization for certain tabs.
+ * @param {string} tabId - The ID of the section to show.
+ */
 function switchTab(tabId) {
-  // Update nav tabs
+  // Update nav tabs visual state
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.tab === tabId);
   });
 
-  // Update content sections
+  // Show/Hide content sections
   document.querySelectorAll('.tab-content').forEach(content => {
     content.classList.toggle('active', content.id === tabId);
   });
 
   state.currentTab = tabId;
 
-  // Re-trigger counter animation if switching to home
+  // Specific Actions per Tab:
+  // 1. Re-trigger counter animation if switching to home
   if (tabId === 'home') {
     initCounters();
   }
 
-  // Re-init map if switching to threats
+  // 2. Restart map simulation if switching to threats
   if (tabId === 'threats') {
     startAttackSimulation();
   }
 }
 
 // =========================================================
-// ARTICLE GRID
+// ARTICLE FEED MODULE
 // =========================================================
+
+/**
+ * Fetches articles from the backend API.
+ * Uses a fallback dataset if the API is offline.
+ */
 async function loadArticles() {
   try {
     const response = await fetch('http://localhost:8001/api/articles?limit=50');
     const data = await response.json();
+
+    // Normalize data structure (handle array or object wrapper)
     const rawArticles = data.articles || (Array.isArray(data) ? data : []);
+
+    // Process and enrich article data
     state.articles = processArticles(rawArticles);
-    state.filteredArticles = [...state.articles];
+    state.filteredArticles = [...state.articles]; // Initial filter is 'all'
+
     renderCategoryFilters();
     renderArticleGrid();
   } catch (error) {
     console.error('Error loading articles:', error);
+    // Use dummy data if backend fails/offline
     renderFallbackGrid();
   }
 }
 
+/**
+ * Processes raw API data into usable article objects.
+ * Handles deduplication, default titles, and categorization.
+ */
 function processArticles(data) {
   const articles = [];
   const seenUrls = new Set();
 
   data.forEach(item => {
+    // Basic validation
     const content = item.full_content || item.content || '';
     if (!item.url || seenUrls.has(item.url) || !content) return;
+
     seenUrls.add(item.url);
 
+    // Clean up Title
     let title = item.title || '';
     if (!title || title === 'Unknown' || title === item.url) {
+      // Fallback: Generate title from URL slug if missing
       const parts = item.url.split('/').filter(p => p);
       title = (parts[parts.length - 1] || 'Cyber Security')
         .replace(/-/g, ' ')
         .replace(/\b\w/g, l => l.toUpperCase());
     }
 
+    // Determine Category and Icon
     const category = item.category || getCategoryFromUrl(item.url);
     const excerpt = item.excerpt || content.substring(0, 200) + '...';
     const icon = getCategoryIcon(category);
@@ -131,6 +183,9 @@ function processArticles(data) {
   return articles;
 }
 
+/**
+ * Heuristic function to guess category from URL keywords.
+ */
 function getCategoryFromUrl(url) {
   const u = url.toLowerCase();
   if (u.includes('physical')) return 'Physical Security';
@@ -148,6 +203,9 @@ function getCategoryFromUrl(url) {
   return 'Cyber Security';
 }
 
+/**
+ * Returns an emoji icon based on the category name.
+ */
 function getCategoryIcon(category) {
   const icons = {
     'Physical Security': '🏢', 'Technical Security': '💻', 'Human Security': '👥',
@@ -159,11 +217,17 @@ function getCategoryIcon(category) {
   return icons[category] || '🔒';
 }
 
+/**
+ * Renders the category filter buttons dynamically based on available articles.
+ */
 function renderCategoryFilters() {
   const filterBar = document.getElementById('category-filter');
   if (!filterBar) return;
 
+  // Extract unique categories
   const categories = [...new Set(state.articles.map(a => a.category))];
+
+  // Create buttons
   filterBar.innerHTML =
     `<button class="filter-btn active" onclick="filterArticles('all')">All (${state.articles.length})</button>` +
     categories.map(cat => {
@@ -172,9 +236,13 @@ function renderCategoryFilters() {
     }).join('');
 }
 
+/**
+ * Filters the displayed articles by category.
+ * @param {string} category - Category name or 'all'.
+ */
 function filterArticles(category) {
   state.currentFilter = category;
-  state.visibleCount = 9;
+  state.visibleCount = 9; // Reset pagination
 
   if (category === 'all') {
     state.filteredArticles = [...state.articles];
@@ -182,7 +250,7 @@ function filterArticles(category) {
     state.filteredArticles = state.articles.filter(a => a.category === category);
   }
 
-  // Update active filter button
+  // Update visual state of filter buttons
   document.querySelectorAll('.filter-btn').forEach(btn => {
     const isAll = category === 'all' && btn.textContent.startsWith('All');
     const isMatch = !isAll && btn.textContent.includes(category);
@@ -192,22 +260,32 @@ function filterArticles(category) {
   renderArticleGrid();
 }
 
+/**
+ * Renders the valid articles into the grid container.
+ * Handles "Load More" functionality and empty states.
+ */
 function renderArticleGrid() {
   const grid = document.getElementById('article-grid');
   const loadMoreContainer = document.getElementById('load-more-container');
   if (!grid) return;
 
+  // Slice for pagination
   const visible = state.filteredArticles.slice(0, state.visibleCount);
 
+  // Empty State
   if (visible.length === 0) {
     grid.innerHTML = '<div class="no-articles"><p>🔍 No articles found for this category.</p></div>';
     if (loadMoreContainer) loadMoreContainer.style.display = 'none';
     return;
   }
 
+  // Map articles to HTML cards
   grid.innerHTML = visible.map((article, idx) => {
     const originalIndex = state.articles.indexOf(article);
+    // First card can be styled as a "Hero" card
     const isHero = idx === 0;
+
+    // Extract hostname for display
     let hostname = '';
     try { hostname = new URL(article.url).hostname; } catch (e) { hostname = 'source'; }
 
@@ -229,16 +307,23 @@ function renderArticleGrid() {
     `;
   }).join('');
 
+  // Update "Load More" button visibility
   if (loadMoreContainer) {
     loadMoreContainer.style.display = state.filteredArticles.length > state.visibleCount ? 'flex' : 'none';
   }
 }
 
+/**
+ * Increases the visible count of articles.
+ */
 function loadMoreArticles() {
   state.visibleCount += 9;
   renderArticleGrid();
 }
 
+/**
+ * Provides hardcoded sample data when backend is unreachable.
+ */
 function renderFallbackGrid() {
   state.articles = [
     { title: 'Areas of Cyber Security', excerpt: 'Cyber security is made up of three main areas - physical, technical and human.', icon: '🔒', category: 'Cyber Security', url: 'https://cyber.uk', full_content: 'Cyber security is made up of three main areas - physical, technical and human. Understanding all three is essential.' },
@@ -255,6 +340,11 @@ function renderFallbackGrid() {
 // ARTICLE READER (IN-PLACE)
 // =========================================================
 
+/**
+ * Opens an article in the dedicated reader view.
+ * Splits text into paragraphs for better readability.
+ * @param {number} index - Index of the article in the global state array.
+ */
 function openArticle(index) {
   const article = state.articles[index];
   if (!article) return;
@@ -262,7 +352,7 @@ function openArticle(index) {
   const feedView = document.getElementById('news-feed');
   const readerView = document.getElementById('article-viewer');
 
-  // Populate header
+  // Populate header data
   document.getElementById('viewer-tag').textContent = article.category;
   document.getElementById('viewer-title').textContent = article.title;
 
@@ -273,7 +363,7 @@ function openArticle(index) {
     document.getElementById('viewer-source').textContent = 'Source';
   }
 
-  // Format content into readable paragraphs
+  // Format content: Split sentences to create paragraphs roughly every 3 sentences
   const rawContent = article.full_content || article.excerpt;
   const sentences = rawContent.split(/(?<=\.)\s+/);
   const paragraphs = [];
@@ -281,48 +371,55 @@ function openArticle(index) {
 
   sentences.forEach((sentence, i) => {
     currentParagraph.push(sentence);
+    // Bundle 3 sentences or flush on last one
     if (currentParagraph.length >= 3 || i === sentences.length - 1) {
       paragraphs.push(currentParagraph.join(' '));
       currentParagraph = [];
     }
   });
 
+  // Inject formatted paragraphs
   document.getElementById('viewer-content').innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
 
-  // Set the ACTUAL external source URL
+  // Set the ACTUAL external source URL button
   const viewerLink = document.getElementById('viewer-link');
   viewerLink.href = article.url;
   viewerLink.setAttribute('target', '_blank');
   viewerLink.setAttribute('rel', 'noopener noreferrer');
 
-  // Render suggested articles
+  // Render suggested "Related" articles
   renderSuggestedArticles(index);
 
-  // Switch views
+  // Switch views (Hide grid, Show reader)
   feedView.classList.add('hidden');
   readerView.classList.remove('hidden');
 
-  // Scroll to top of section
+  // Auto-scroll to top of section for better UX
   const section = document.getElementById('insights');
   if (section) section.scrollIntoView({ behavior: 'smooth' });
 }
 
+/**
+ * Finds and displays related articles in the reader footer.
+ */
 function renderSuggestedArticles(currentIndex) {
   const container = document.getElementById('suggested-articles');
   if (!container) return;
 
   const current = state.articles[currentIndex];
+  // Create list of other articles with their original indices
   let related = state.articles
     .map((a, i) => ({ ...a, _idx: i }))
     .filter(a => a._idx !== currentIndex);
 
-  // Sort: same-category articles first
+  // Sort: prioritize same-category articles
   related.sort((a, b) => {
     const aMatch = a.category === current.category ? 0 : 1;
     const bMatch = b.category === current.category ? 0 : 1;
     return aMatch - bMatch;
   });
 
+  // Take top 3
   const suggestions = related.slice(0, 3);
 
   container.innerHTML = suggestions.map(article => `
@@ -336,6 +433,9 @@ function renderSuggestedArticles(currentIndex) {
   `).join('');
 }
 
+/**
+ * Closes the article reader and returns to the feed.
+ */
 function closeArticle() {
   const feedView = document.getElementById('news-feed');
   const readerView = document.getElementById('article-viewer');
@@ -343,21 +443,25 @@ function closeArticle() {
   readerView.classList.add('hidden');
   feedView.classList.remove('hidden');
 
-  // Scroll back to feed
+  // Scroll back to feed top
   const section = document.getElementById('insights');
   if (section) section.scrollIntoView({ behavior: 'smooth' });
 }
 
 // =========================================================
-// ANIMATED COUNTERS
+// ANIMATED COUNTERS MODULE
 // =========================================================
+
+/**
+ * Initializes and triggers number counting animations when scrolled into view.
+ */
 function initCounters() {
   const counters = document.querySelectorAll('[data-counter]');
 
   counters.forEach(counter => {
     const target = parseInt(counter.dataset.counter);
-    const duration = 2000;
-    const step = target / (duration / 16);
+    const duration = 2000; // 2 seconds animation
+    const step = target / (duration / 16); // ~60fps
     let current = 0;
 
     counter.textContent = '0';
@@ -372,12 +476,12 @@ function initCounters() {
       }
     };
 
-    // Start animation when element is visible
+    // Use IntersectionObserver to start animation only when visible
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           updateCounter();
-          observer.unobserve(entry.target);
+          observer.unobserve(entry.target); // Run once
         }
       });
     }, { threshold: 0.5 });
@@ -386,6 +490,9 @@ function initCounters() {
   });
 }
 
+/**
+ * Formats numbers with locale separators (e.g., 1,000,000).
+ */
 function formatNumber(num) {
   return num.toLocaleString('en-GB');
 }
@@ -393,6 +500,7 @@ function formatNumber(num) {
 // =========================================================
 // LIVE ATTACK MAP SIMULATION
 // =========================================================
+// Predefined coordinates for map visualizations
 const attackCountries = [
   { name: 'Russia', code: 'RU', x: 75, y: 25 },
   { name: 'China', code: 'CN', x: 82, y: 40 },
@@ -424,51 +532,63 @@ function initAttackMap() {
   updateThreatStats();
 }
 
+/**
+ * Starts the interval for random attack generation.
+ */
 function startAttackSimulation() {
-  // Simulate attacks every 2-4 seconds
+  // Simulate new attacks every 2-4 seconds with randomness
   setInterval(() => {
     simulateAttack();
   }, 2000 + Math.random() * 2000);
 
-  // Initial attacks
+  // Trigger a burst of initial attacks
   for (let i = 0; i < 5; i++) {
     setTimeout(() => simulateAttack(), i * 500);
   }
 }
 
+/**
+ * Generates a random attack event between two countries.
+ */
 function simulateAttack() {
   const sourceIndex = Math.floor(Math.random() * attackCountries.length);
   const targetIndex = Math.floor(Math.random() * attackCountries.length);
 
+  // Prevent self-attack (unless internal?) - simplify to distinct for visual clarity
   if (sourceIndex === targetIndex) return;
 
   const source = attackCountries[sourceIndex];
   const target = attackCountries[targetIndex];
   const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
 
-  // Update stats
+  // Update Stats
   attackStats.total++;
   attackType.count++;
 
-  // 70% chance of being blocked
+  // 70% chance of being "Blocked" (for positive user feeling)
   if (Math.random() < 0.7) {
     attackStats.blocked++;
   } else {
     attackStats.active++;
+    // Active attacks resolve after 5 seconds
     setTimeout(() => attackStats.active--, 5000);
   }
 
-  // Create attack visual
+  // Trigger visual lines
   createAttackLine(source, target, attackType.color);
   updateThreatStats();
 }
 
+/**
+ * Creates and animates a DOM element representing a cyber attack packet.
+ */
 function createAttackLine(source, target, color) {
   const container = document.querySelector('.attack-lines');
   if (!container) return;
 
   const line = document.createElement('div');
   line.className = 'attack-animation';
+  // CSS variables control the trajectory
   line.style.cssText = `
     position: absolute;
     left: ${source.x}%;
@@ -485,10 +605,13 @@ function createAttackLine(source, target, color) {
 
   container.appendChild(line);
 
-  // Remove after animation
+  // Cleanup DOM after animation finishes
   setTimeout(() => line.remove(), 1500);
 }
 
+/**
+ * Updates the statistical display on the threat map.
+ */
 function updateThreatStats() {
   const elements = {
     total: document.querySelector('[data-stat="total"]'),
@@ -500,7 +623,7 @@ function updateThreatStats() {
   if (elements.blocked) elements.blocked.textContent = formatNumber(attackStats.blocked);
   if (elements.active) elements.active.textContent = attackStats.active;
 
-  // Update attack type list
+  // Update list of attack types/counts
   const typeList = document.querySelector('.threat-type-list');
   if (typeList) {
     typeList.innerHTML = attackTypes.map(type => `
@@ -516,7 +639,7 @@ function updateThreatStats() {
 }
 
 // =========================================================
-// REPORT CRIME FORM
+// CRIME REPORT FORM MODULE
 // =========================================================
 let currentFormStep = 1;
 let selectedCategory = null;
@@ -525,18 +648,25 @@ function initReportForm() {
   updateFormProgress();
 }
 
+/**
+ * Handles category selection in step 1 of the form.
+ */
 function selectCategory(element, category) {
-  // Remove previous selection
+  // Clear previous selection
   document.querySelectorAll('.category-option').forEach(opt => {
     opt.classList.remove('selected');
   });
 
-  // Add selection to clicked element
+  // Apply new selection
   element.classList.add('selected');
   selectedCategory = category;
 }
 
+/**
+ * Advances to the next form step with validation.
+ */
 function nextFormStep() {
+  // Validation for Step 1
   if (currentFormStep === 1 && !selectedCategory) {
     alert('Please select a crime category');
     return;
@@ -549,6 +679,9 @@ function nextFormStep() {
   }
 }
 
+/**
+ * Returns to the previous form step.
+ */
 function prevFormStep() {
   if (currentFormStep > 1) {
     currentFormStep--;
@@ -557,6 +690,9 @@ function prevFormStep() {
   }
 }
 
+/**
+ * Updates the visual progress bar.
+ */
 function updateFormProgress() {
   const steps = document.querySelectorAll('.progress-step');
   steps.forEach((step, index) => {
@@ -569,16 +705,26 @@ function updateFormProgress() {
   });
 }
 
+/**
+ * Toggles visibility of form sections based on current step.
+ */
 function showFormStep(step) {
   document.querySelectorAll('.form-section').forEach((section, index) => {
     section.classList.toggle('active', index + 1 === step);
   });
 }
 
+/**
+ * Handles form submission.
+ * Validates data and shows success message.
+ */
 function submitReport(event) {
   event.preventDefault();
 
-  // Show success message
+  // In a real app, we would gather form data and POST to backend here.
+  // const formData = new FormData(event.target);
+
+  // Show success message replacement
   const form = document.querySelector('.report-form');
   form.innerHTML = `
     <div style="text-align: center; padding: 3rem;">
@@ -597,6 +743,10 @@ function submitReport(event) {
 // =========================================================
 // UTILITY FUNCTIONS
 // =========================================================
+
+/**
+ * Debounce function to limit rate of execution (e.g., for resize events).
+ */
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -609,12 +759,15 @@ function debounce(func, wait) {
   };
 }
 
-// Expose functions to global scope for HTML onclick handlers
+// =========================================================
+// EXPORTS
+// =========================================================
+// Expose functions to global scope for HTML onclick handlers to work.
 window.toggleTheme = toggleTheme;
 window.switchTab = switchTab;
-window.nextSlide = nextSlide;
-window.prevSlide = prevSlide;
-window.goToSlide = goToSlide;
+// window.nextSlide = nextSlide; // Removed if unused
+// window.prevSlide = prevSlide; // Removed if unused
+// window.goToSlide = goToSlide; // Removed if unused
 window.selectCategory = selectCategory;
 window.nextFormStep = nextFormStep;
 window.prevFormStep = prevFormStep;

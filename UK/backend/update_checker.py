@@ -1,6 +1,15 @@
 """
-Update Checker - Monitors source URLs for content changes.
-Uses content hashing to detect when pages have been updated.
+Update Checker Module
+
+This module monitors external cybersecurity sources for new content.
+It serves two main purposes:
+1. Detecting when a scraped URL source has actually changed (using content hashing).
+2. Serving the "Latest News" feed by cleaning and formatting the scraped content.
+
+Key Features:
+- MD5 Hashing to minimize redundant alerts.
+- Asynchronous fetching for speed.
+- Heuristic extraction of Titles and Categories from raw HTML/Text.
 """
 
 import json
@@ -15,6 +24,13 @@ from bs4 import BeautifulSoup
 
 class UpdateChecker:
     def __init__(self, json_path: str, cache_path: str = "./update_cache.json"):
+        """
+        Initialize the update checker.
+        
+        Args:
+            json_path (str): Path to the source JSON file containing URLs.
+            cache_path (str): Path to store the 'last seen' state of URLs.
+        """
         self.json_path = Path(json_path)
         self.cache_path = Path(cache_path)
         self.sources: List[Dict] = []
@@ -25,7 +41,7 @@ class UpdateChecker:
         self._load_cache()
     
     def _load_sources(self):
-        """Load source URLs from JSON data file."""
+        """Load the list of sources to monitor from the scraped data file."""
         try:
             with open(self.json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -37,7 +53,7 @@ class UpdateChecker:
             self.sources = []
     
     def _load_cache(self):
-        """Load hash cache from file."""
+        """Load the persistent cache of previous checks."""
         try:
             if self.cache_path.exists():
                 with open(self.cache_path, 'r', encoding='utf-8') as f:
@@ -47,7 +63,7 @@ class UpdateChecker:
             self.cache = {}
     
     def _save_cache(self):
-        """Save hash cache to file."""
+        """Persist the current state of checks to disk."""
         try:
             with open(self.cache_path, 'w', encoding='utf-8') as f:
                 json.dump(self.cache, f, indent=2)
@@ -55,12 +71,15 @@ class UpdateChecker:
             print(f"Error saving cache: {e}")
     
     def _hash_content(self, content: str) -> str:
-        """Generate MD5 hash of content."""
+        """Create a fingerprint of the content to detect changes."""
         return hashlib.md5(content.encode('utf-8')).hexdigest()
     
     def _extract_title(self, content: str, url: str) -> str:
-        """Extract title from content (HTML or plain text) or URL."""
-        # Try HTML parsing first
+        """
+        Attempt to derive a meaningful title for a piece of content.
+        Tries: HTML tags -> First logical sentence -> URL slug -> Domain name.
+        """
+        # Strategy 1: HTML parsing (if content looks like HTML)
         try:
             soup = BeautifulSoup(content, 'html.parser')
             title_tag = soup.find('title')
@@ -72,39 +91,37 @@ class UpdateChecker:
         except:
             pass
         
-        # Plain text: use first meaningful line or sentence
+        # Strategy 2: Plain text analysis
         if content:
-            # Split by newlines, take first non-empty line that's title-like
+            # Look for a short, non-URL first line
             for line in content.split('\n'):
                 line = line.strip()
-                # Good title: 10-120 chars, doesn't start with common non-title patterns
                 if 10 < len(line) < 120 and not line.startswith(('Home /', 'http', 'www.', '©')):
                     return line
-            # Fallback: first sentence
+            # Fallback to first sentence
             first_sentence = content.split('.')[0].strip()
             if 10 < len(first_sentence) < 150:
                 return first_sentence
         
-        # URL-based fallback
+        # Strategy 3: URL Path analysis
         from urllib.parse import urlparse
         parsed = urlparse(url)
         path = parsed.path.strip('/')
         if path:
-            # Take last meaningful path segment
             segment = path.split('/')[-1]
             title = segment.replace('-', ' ').replace('_', ' ')
             return title.title()[:100]
         
-        # Last resort: use domain
+        # Strategy 4: Domain Name
         domain = parsed.netloc.replace('www.', '')
         return domain or "Unknown"
     
     def is_ready(self) -> bool:
-        """Check if update checker is ready."""
+        """Helper to check if sources are loaded."""
         return len(self.sources) > 0
     
     async def fetch_url(self, url: str, timeout: float = 10.0) -> Optional[str]:
-        """Fetch content from URL."""
+        """Async fetch of a URL with error handling."""
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(url, timeout=timeout, follow_redirects=True)
@@ -115,30 +132,34 @@ class UpdateChecker:
         return None
     
     async def check_single_url(self, source: dict) -> Optional[dict]:
-        """Check a single URL for updates."""
+        """
+        Verify a single source against its cached state.
+        Returns an update object ONLY if content has changed.
+        """
         url = source.get('url', '')
         if not url:
             return None
         
-        # Fetch current content
+        # 1. Fetch live content
         current_content = await self.fetch_url(url)
         if not current_content:
             return None
         
+        # 2. Compare Hash
         current_hash = self._hash_content(current_content)
         cached = self.cache.get(url, {})
         stored_hash = cached.get('hash')
         
-        # Determine if content changed
         has_new_content = stored_hash is not None and current_hash != stored_hash
         
-        # Update cache
+        # 3. Update State
         self.cache[url] = {
             'hash': current_hash,
             'last_checked': datetime.now().isoformat(),
             'title': self._extract_title(current_content, url)
         }
         
+        # 4. Report if interesting
         if has_new_content or stored_hash is None:
             return {
                 'url': url,
@@ -150,12 +171,14 @@ class UpdateChecker:
     
     async def check_for_updates(self, limit: int = 10) -> List[dict]:
         """
-        Check multiple URLs for updates.
-        Only checks a subset to avoid overwhelming servers.
+        Main entry point for update checking.
+        Checks a subset (limit) of sources concurrently.
         """
         updates = []
+        # Slice to avoid checking thousands of URLs at once
         sources_to_check = self.sources[:limit]
         
+        # Run checks in parallel
         tasks = [self.check_single_url(source) for source in sources_to_check]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
@@ -166,8 +189,15 @@ class UpdateChecker:
         self._save_cache()
         return updates
     
+    # ==================================================
+    # ARTICLE PROCESSING HELPERS (Category, Clean, Excerpt)
+    # ==================================================
+
     def _get_category(self, url: str) -> str:
-        """Derive category from URL path."""
+        """
+        Determine category based on keywords in the URL.
+        Useful for tagging articles without explicit metadata.
+        """
         url_lower = url.lower()
         if 'physical' in url_lower: return 'Physical Security'
         if 'technical' in url_lower: return 'Technical Security'
@@ -185,23 +215,28 @@ class UpdateChecker:
         return 'Cyber Security'
 
     def _clean_content(self, content: str) -> str:
-        """Remove repeated breadcrumb-like prefixes from scraped content."""
+        """
+        Remove scraping artifacts like redundant breadcrumbs or menus.
+        """
         if not content:
             return ''
-        # Many scraped pages have the content repeated multiple times
-        # Take only first occurrence (up to ~40% of total) to avoid duplication
+        
+        # Optimization: Scraped content often duplicates itself. 
+        # We take the first 1/3rd as a heuristic for the "main" content if it's huge.
         half = len(content) // 3
         if half > 500:
             content = content[:half]
-        # Strip leading "Home / ..." breadcrumb
+            
+        # Regex to strip common "Home / Category / Title" breadcrumb strings
         import re
         content = re.sub(r'^(Home\s*/\s*.*?(?:\n|(?=[A-Z][a-z])))', '', content, count=1).strip()
         return content
 
     def _generate_excerpt(self, content: str, max_len: int = 200) -> str:
-        """Generate a clean excerpt from content."""
+        """Generate a short preview text for cards."""
         clean = self._clean_content(content)
-        # Find first sentence that's meaningful (>30 chars)
+        
+        # Try to find a complete sentence that has enough meat (>20 chars)
         sentences = clean.split('.')
         excerpt_parts = []
         total = 0
@@ -210,22 +245,35 @@ class UpdateChecker:
             if len(s) > 20 and total + len(s) < max_len:
                 excerpt_parts.append(s)
                 total += len(s)
-        return '. '.join(excerpt_parts) + '...' if excerpt_parts else clean[:max_len] + '...'
+        
+        # Return properly ellipsized string
+        result = '. '.join(excerpt_parts)
+        if not result:
+            return clean[:max_len] + '...'
+        return result + '...'
 
     def get_articles(self, limit: int = 50) -> List[dict]:
-        """Get articles from loaded sources for display."""
+        """
+        Transform raw source data into frontend-ready Article objects.
+        Filters out duplicates and minimal content.
+        """
         articles = []
         seen_titles = set()
+        
         for source in self.sources[:limit]:
             content = source.get('content', '')
             url = source.get('url', '')
+            
             if not content or not url:
                 continue
+                
             title = self._extract_title(content, url)
-            # Skip duplicates by title
+            
+            # Deduplication
             if title in seen_titles:
                 continue
             seen_titles.add(title)
+            
             articles.append({
                 'url': url,
                 'title': title,
@@ -234,4 +282,5 @@ class UpdateChecker:
                 'category': self._get_category(url),
                 'type': source.get('type', 'html')
             })
+            
         return articles

@@ -1,6 +1,13 @@
 """
-PDF Processor - Extract and chunk text from PDFs for RAG ingestion.
-Supports both PyPDF2 and pdfplumber for maximum compatibility.
+PDF Processor Module
+
+This module is responsible for extracting clean text from PDF documents and splitting it into 
+manageable chunks for the Retrieval Augmented Generation (RAG) system.
+
+Key Features:
+- Dual-engine extraction: Falls back to PyPDF2 if pdfplumber fails.
+- Text cleaning: Removes noise like headers, footers, and fragmented URLs.
+- Intelligence Chunking: Splits text into overlapping segments to preserve context boundaries.
 """
 
 from pathlib import Path
@@ -9,7 +16,10 @@ import re
 
 
 def extract_text_pypdf2(pdf_path: str) -> str:
-    """Extract text using PyPDF2."""
+    """
+    Extract text using PyPDF2 library.
+    Generally faster but less robust with complex layouts.
+    """
     try:
         from PyPDF2 import PdfReader
         reader = PdfReader(pdf_path)
@@ -25,7 +35,10 @@ def extract_text_pypdf2(pdf_path: str) -> str:
 
 
 def extract_text_pdfplumber(pdf_path: str) -> str:
-    """Extract text using pdfplumber (better for complex layouts)."""
+    """
+    Extract text using pdfplumber library.
+    Better at handling multi-column layouts and tables.
+    """
     try:
         import pdfplumber
         text_parts = []
@@ -41,24 +54,44 @@ def extract_text_pdfplumber(pdf_path: str) -> str:
 
 
 def clean_text(text: str) -> str:
-    """Clean extracted text."""
+    """
+    Sanitize extracted text to improve embedding quality.
+    
+    Operations:
+    - Collapses multiple whitespace characters into single spaces.
+    - Removes common footer patterns like 'Page X of Y'.
+    - Fixes broken URL patterns often caused by line breaks in PDFs.
+    """
     # Remove excessive whitespace
     text = re.sub(r'\s+', ' ', text)
     # Remove page numbers and headers
     text = re.sub(r'Page \d+ of \d+', '', text)
-    # Remove URLs that are fragmented
+    # Remove URLs that are fragmented (e.g. http : // ...)
     text = re.sub(r'http\s*:\s*/\s*/\s*', 'https://', text)
     return text.strip()
 
 
 def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> List[str]:
-    """Split text into overlapping chunks for embedding."""
+    """
+    Split text into overlapping chunks.
+    
+    Args:
+        text (str): The full text content.
+        chunk_size (int): Target number of words per chunk.
+        overlap (int): Number of words to overlap between chunks to maintain context.
+        
+    Returns:
+        List[str]: A list of text chunks.
+    """
     words = text.split()
     chunks = []
     
     for i in range(0, len(words), chunk_size - overlap):
+        # Create chunk
         chunk = ' '.join(words[i:i + chunk_size])
-        if len(chunk) > 100:  # Skip very short chunks
+        
+        # Validation: Skip very short chunks that may not have enough context
+        if len(chunk) > 100:  
             chunks.append(chunk)
     
     return chunks
@@ -66,15 +99,23 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> List[str]
 
 def process_pdf(pdf_path: str, region: str = "UK", title: str = None) -> List[Dict]:
     """
-    Process a PDF file for RAG ingestion.
+    Workflow to fully process a single PDF file for RAG ingestion.
     
-    Returns list of document chunks with metadata.
+    Steps:
+    1. Extract text (trying multiple engines).
+    2. Clean text.
+    3. Split into chunks.
+    4. Wrap chunks with metadata (ID, Source, Title).
+    
+    Returns:
+        List[Dict]: List of document objects ready for insertion into vector DB.
     """
     path = Path(pdf_path)
     if not path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
     
-    # Extract text (try pdfplumber first, fall back to PyPDF2)
+    # 1. Extract Text Strategy
+    # Try pdfplumber first (higher quality), fall back to PyPDF2
     text = extract_text_pdfplumber(pdf_path)
     if not text:
         text = extract_text_pypdf2(pdf_path)
@@ -82,11 +123,13 @@ def process_pdf(pdf_path: str, region: str = "UK", title: str = None) -> List[Di
     if not text:
         raise ValueError(f"Could not extract text from {pdf_path}")
     
-    # Clean and chunk
+    # 2. Clean
     text = clean_text(text)
+    
+    # 3. Chunk
     chunks = chunk_text(text)
     
-    # Build documents
+    # 4. Build Document Objects
     doc_title = title or path.stem.replace('_', ' ').replace('-', ' ').title()
     documents = []
     
@@ -109,10 +152,14 @@ def process_pdf(pdf_path: str, region: str = "UK", title: str = None) -> List[Di
 
 
 def process_pdf_directory(directory: str, region: str = "UK") -> List[Dict]:
-    """Process all PDFs in a directory."""
+    """
+    Batch process all PDF files in a given directory.
+    Useful for bulk ingestion.
+    """
     path = Path(directory)
     all_documents = []
     
+    # Glob for all .pdf files
     for pdf_file in path.glob("*.pdf"):
         try:
             documents = process_pdf(str(pdf_file), region)
@@ -124,7 +171,7 @@ def process_pdf_directory(directory: str, region: str = "UK") -> List[Dict]:
 
 
 if __name__ == "__main__":
-    # Test with sample PDF
+    # Test block: allows running this script standalone to test a specific PDF
     import sys
     if len(sys.argv) > 1:
         docs = process_pdf(sys.argv[1])
