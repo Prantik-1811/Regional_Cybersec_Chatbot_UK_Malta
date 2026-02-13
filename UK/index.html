@@ -49,7 +49,8 @@
         <button class="nav-tab active" data-tab="home">Home</button>
         <button class="nav-tab" data-tab="threats">Live Threats</button>
         <button class="nav-tab" data-tab="centers">Report Centers</button>
-        <button class="nav-tab" onclick="window.open('http://localhost:8001/docs', '_blank')">API & Docs</button>
+        <!-- API & Docs: Navigates to the FastAPI Swagger docs in the same tab (_self) -->
+        <button class="nav-tab" onclick="window.open('http://localhost:8001/docs', '_self')">API &amp; Docs</button>
         <button class="nav-tab" data-tab="about">About Us</button>
         <!-- Distinct CTA button style for Reporting -->
         <button class="nav-tab" data-tab="report">Report Crime</button>
@@ -336,106 +337,56 @@
         <h1 style="margin-bottom: 2rem;">📍 UK Cybercrime Reporting Centers</h1>
 
         <div class="centers-section">
-          <!-- UK Map Visualization -->
+          <!-- 
+            UK Interactive Map — Click a region to see local reporting centres.
+            The SVG is loaded via <object> and contains an embedded <script> that
+            handles click highlighting and sends postMessage({ type: 'regionClick', regionId }) 
+            to this parent window. main.js listens for these messages in initRegionMap().
+          -->
           <div class="uk-map-container glass-card">
-            <div class="uk-map"
+            <div class="uk-map" id="uk-map-interactive"
               style="background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; position: relative; min-height: 500px;">
-              <object data="assets/uk-map.svg" type="image/svg+xml" style="width: 100%; max-height: 600px;">
+              <object id="uk-map-svg" data="assets/uk-map.svg" type="image/svg+xml"
+                style="width: 100%; max-height: 600px;">
                 <p>UK Map</p>
               </object>
             </div>
           </div>
 
-          <!-- Agency Contact Cards -->
-          <div class="center-cards">
-            <!-- Action Fraud -->
-            <div class="center-card glass-card active">
-              <div class="center-name">Action Fraud</div>
-              <span class="center-type">National Reporting Centre</span>
-              <div class="center-info">
-                <div class="center-info-item">
-                  📞 <a href="tel:03001232040">0300 123 2040</a>
-                </div>
-                <div class="center-info-item">
-                  🌐 <a href="https://www.actionfraud.police.uk" target="_blank">actionfraud.police.uk</a>
-                </div>
-                <div class="center-info-item">
-                  📍 City of London Police, London
-                </div>
-                <div class="center-info-item">
-                  ⏰ 24/7 Online | Phone: Mon-Fri 8am-8pm
-                </div>
+          <!-- Dynamic Region Info Panel (populated by JS on click) -->
+          <div class="center-cards" id="region-centers">
+            <!-- Default prompt before any region is selected -->
+            <div class="region-prompt glass-card" id="region-prompt">
+              <div style="text-align: center; padding: 3rem 1.5rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🗺️</div>
+                <h3 style="margin-bottom: 0.75rem;">Click a Region</h3>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                  Click on any area of the UK map to discover your nearest cybercrime reporting centres,
+                  with phone numbers, websites, and addresses.
+                </p>
               </div>
             </div>
 
-            <!-- NCSC -->
+            <!-- National Services (always visible) -->
             <div class="center-card glass-card">
-              <div class="center-name">National Cyber Security Centre (NCSC)</div>
+              <div class="center-name">Report Fraud (National)</div>
+              <span class="center-type">National Reporting Service</span>
+              <div class="center-info">
+                <div class="center-info-item">📞 <a href="tel:03001232040">0300 123 2040</a></div>
+                <div class="center-info-item">🌐 <a href="https://reportfraud.police.uk"
+                    target="_blank">reportfraud.police.uk</a></div>
+                <div class="center-info-item">📍 City of London Police, London</div>
+                <div class="center-info-item">⏰ 24/7 for businesses under attack</div>
+              </div>
+            </div>
+            <div class="center-card glass-card">
+              <div class="center-name">NCSC</div>
               <span class="center-type">Government Agency</span>
               <div class="center-info">
-                <div class="center-info-item">
-                  🌐 <a href="https://www.ncsc.gov.uk" target="_blank">ncsc.gov.uk</a>
-                </div>
-                <div class="center-info-item">
-                  📧 Report suspicious emails to: report@phishing.gov.uk
-                </div>
-                <div class="center-info-item">
-                  📍 London, UK
-                </div>
-              </div>
-            </div>
-
-            <!-- Police Scotland -->
-            <div class="center-card glass-card">
-              <div class="center-name">Police Scotland</div>
-              <span class="center-type" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">Scotland
-                Only</span>
-              <div class="center-info">
-                <div class="center-info-item">
-                  📞 <a href="tel:101">101</a> (Non-emergency)
-                </div>
-                <div class="center-info-item">
-                  🌐 <a href="https://www.scotland.police.uk" target="_blank">scotland.police.uk</a>
-                </div>
-                <div class="center-info-item">
-                  📍 Edinburgh, Scotland
-                </div>
-              </div>
-            </div>
-
-            <!-- Crimestoppers -->
-            <div class="center-card glass-card">
-              <div class="center-name">Crimestoppers</div>
-              <span class="center-type" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">Anonymous
-                Reporting</span>
-              <div class="center-info">
-                <div class="center-info-item">
-                  📞 <a href="tel:0800555111">0800 555 111</a>
-                </div>
-                <div class="center-info-item">
-                  🌐 <a href="https://crimestoppers-uk.org" target="_blank">crimestoppers-uk.org</a>
-                </div>
-                <div class="center-info-item">
-                  📍 UK-wide, 100% Anonymous
-                </div>
-              </div>
-            </div>
-
-            <!-- ICO -->
-            <div class="center-card glass-card">
-              <div class="center-name">Information Commissioner's Office (ICO)</div>
-              <span class="center-type" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">Data
-                Breaches</span>
-              <div class="center-info">
-                <div class="center-info-item">
-                  📞 <a href="tel:03031231113">0303 123 1113</a>
-                </div>
-                <div class="center-info-item">
-                  🌐 <a href="https://ico.org.uk" target="_blank">ico.org.uk</a>
-                </div>
-                <div class="center-info-item">
-                  📍 Wilmslow, Cheshire
-                </div>
+                <div class="center-info-item">📞 <a href="tel:03000000000">0300 000 0000</a></div>
+                <div class="center-info-item">🌐 <a href="https://www.ncsc.gov.uk" target="_blank">ncsc.gov.uk</a></div>
+                <div class="center-info-item">📧 report@phishing.gov.uk</div>
+                <div class="center-info-item">📍 PO Box 74045, London, NW5 9HF</div>
               </div>
             </div>
           </div>
@@ -855,7 +806,15 @@
     <div class="chatbot-container hidden">
       <div class="chatbot-header">
         <span>🤖 CyberSafe AI</span>
-        <button class="chatbot-close" onclick="toggleChatbot()">×</button>
+        <!-- Header Actions: Fullscreen (⛶), Pop-out to new tab (↗), and Close (×) -->
+        <div class="chatbot-header-actions">
+          <!-- Expands the chatbot to fill the entire viewport -->
+          <button class="chatbot-action-btn" onclick="toggleChatFullscreen()" title="Toggle fullscreen">⛶</button>
+          <!-- Opens chat history in a standalone new browser tab -->
+          <button class="chatbot-action-btn" onclick="popoutChatbot()" title="Open in new tab">↗</button>
+          <!-- Closes / minimises the chatbot panel -->
+          <button class="chatbot-close" onclick="toggleChatbot()">×</button>
+        </div>
       </div>
       <div class="chatbot-messages" id="chatbot-messages">
         <div class="chat-message bot">

@@ -112,4 +112,52 @@
       <text x="-80" y="5" font-family="monospace" font-size="16" fill="#0ea5e9">CARDIFF</text>
     </g>
   </g>
+  <script type="text/javascript">
+    // <![CDATA[
+    /**
+     * UK Map Region Click Handler (runs inside the SVG document)
+     *
+     * This SVG is embedded via an <object> tag in index.html.
+     * Because the page may be served over the file:// protocol,
+     * the parent page cannot access this SVG's DOM directly
+     * (contentDocument is blocked by browser cross-origin rules).
+     *
+     * Instead, this embedded script:
+     *   1. Attaches click listeners to every <path> with id starting "GB-".
+     *   2. On click, resets all region highlights and highlights the clicked one.
+     *   3. Sends a postMessage to the parent window with the clicked region ID.
+     *
+     * The parent (main.js → initRegionMap) listens for these messages
+     * and updates the right-hand info panel via showRegionCenters().
+     */
+    document.addEventListener('DOMContentLoaded', function() {
+      // Select all 12 UK region paths (ids: GB-UKC through GB-UKN)
+      var paths = document.querySelectorAll('path[id^="GB-"]');
+
+      paths.forEach(function(path) {
+        path.style.cursor = 'pointer';
+        path.style.transition = 'all 0.3s ease';
+
+        path.addEventListener('click', function() {
+          // Reset all region highlights to their original SVG styles
+          paths.forEach(function(p) {
+            p.style.fill = '';
+            p.style.fillOpacity = '';
+            p.style.stroke = '';
+            p.style.filter = '';
+          });
+
+          // Highlight the clicked region with a blue glow
+          path.style.fill = '#0ea5e9';
+          path.style.fillOpacity = '0.6';
+          path.style.stroke = '#ffffff';
+          path.style.filter = 'drop-shadow(0 0 12px rgba(14,165,233,0.6))';
+
+          // Notify the parent window so it can update the info panel
+          window.parent.postMessage({ type: 'regionClick', regionId: path.id }, '*');
+        });
+      });
+    });
+    // ]]>
+  </script>
 </svg>

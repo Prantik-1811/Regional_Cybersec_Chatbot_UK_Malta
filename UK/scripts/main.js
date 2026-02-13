@@ -107,14 +107,15 @@ function switchTab(tabId) {
   state.currentTab = tabId;
 
   // Specific Actions per Tab:
-  // 1. Re-trigger counter animation if switching to home
   if (tabId === 'home') {
     initCounters();
   }
-
-  // 2. Restart map simulation if switching to threats
   if (tabId === 'threats') {
     startAttackSimulation();
+  }
+  // Initialize clickable UK map when switching to centers tab
+  if (tabId === 'centers') {
+    initRegionMap();
   }
 }
 
@@ -639,6 +640,182 @@ function updateThreatStats() {
 }
 
 // =========================================================
+// INTERACTIVE UK REGION MAP MODULE
+// =========================================================
+const REGION_DATA = {
+  'GB-UKC': {
+    name: 'North East England',
+    centers: [
+      { name: 'Northumbria Police', type: 'Regional Police', phone: '101', website: 'https://www.northumbria.police.uk', address: 'Forth Banks, Newcastle upon Tyne, NE1 3PF' },
+      { name: 'Durham Constabulary', type: 'Regional Police', phone: '101', website: 'https://www.durham.police.uk', address: 'Aykley Heads, Durham, DH1 5TT' },
+      { name: 'Cleveland Police', type: 'Regional Police', phone: '101', website: 'https://www.cleveland.police.uk', address: 'Ladgate Lane, Middlesbrough, TS8 9EH' }
+    ]
+  },
+  'GB-UKD': {
+    name: 'North West England',
+    centers: [
+      { name: 'Greater Manchester Police', type: 'Regional Police', phone: '101', website: 'https://www.gmp.police.uk', address: 'Central Park, Northampton Road, Manchester, M40 5BP' },
+      { name: 'Merseyside Police', type: 'Regional Police', phone: '101', website: 'https://www.merseyside.police.uk', address: 'Rose Hill, Liverpool, L3 3AY' },
+      { name: 'Lancashire Constabulary', type: 'Regional Police', phone: '101', website: 'https://www.lancashire.police.uk', address: 'Saunders Lane, Hutton, Preston, PR4 5SB' }
+    ]
+  },
+  'GB-UKE': {
+    name: 'Yorkshire & The Humber',
+    centers: [
+      { name: 'West Yorkshire Police', type: 'Regional Police', phone: '101', website: 'https://www.westyorkshire.police.uk', address: 'Laburnum Road, Wakefield, WF1 3QP' },
+      { name: 'South Yorkshire Police', type: 'Regional Police', phone: '101', website: 'https://www.southyorkshire.police.uk', address: 'Carbrook House, Sheffield, S9 2EH' },
+      { name: 'Humberside Police', type: 'Regional Police', phone: '101', website: 'https://www.humberside.police.uk', address: 'Priory Road, Hull, HU5 5SF' }
+    ]
+  },
+  'GB-UKF': {
+    name: 'East Midlands',
+    centers: [
+      { name: 'Nottinghamshire Police', type: 'Regional Police', phone: '101', website: 'https://www.nottinghamshire.police.uk', address: 'Sherwood Lodge, Arnold, Nottingham, NG5 8PP' },
+      { name: 'Leicestershire Police', type: 'Regional Police', phone: '101', website: 'https://www.leics.police.uk', address: 'St Johns, Enderby, Leicester, LE19 2BX' },
+      { name: 'Derbyshire Constabulary', type: 'Regional Police', phone: '101', website: 'https://www.derbyshire.police.uk', address: 'Butterley Hall, Ripley, Derbyshire, DE5 3RS' }
+    ]
+  },
+  'GB-UKG': {
+    name: 'West Midlands',
+    centers: [
+      { name: 'West Midlands Police', type: 'Regional Police', phone: '101', website: 'https://www.west-midlands.police.uk', address: 'Lloyd House, Colmore Circus, Birmingham, B4 6NQ' },
+      { name: 'Staffordshire Police', type: 'Regional Police', phone: '101', website: 'https://www.staffordshire.police.uk', address: 'Weston Road, Stafford, ST18 0YY' },
+      { name: 'West Mercia Police', type: 'Regional Police', phone: '101', website: 'https://www.westmercia.police.uk', address: 'Hindlip Hall, Worcester, WR3 8SP' }
+    ]
+  },
+  'GB-UKH': {
+    name: 'East of England',
+    centers: [
+      { name: 'Norfolk Constabulary', type: 'Regional Police', phone: '101', website: 'https://www.norfolk.police.uk', address: 'Jubilee House, Falconers Chase, Wymondham, NR18 0WW' },
+      { name: 'Suffolk Constabulary', type: 'Regional Police', phone: '101', website: 'https://www.suffolk.police.uk', address: 'Martlesham Heath, Ipswich, IP5 3QS' },
+      { name: 'Essex Police', type: 'Regional Police', phone: '101', website: 'https://www.essex.police.uk', address: 'Kelvedon Park, Rivenhall, Chelmsford, CM8 3HB' }
+    ]
+  },
+  'GB-UKI': {
+    name: 'London',
+    centers: [
+      { name: 'City of London Police', type: 'National Lead for Fraud', phone: '0300 123 2040', website: 'https://reportfraud.police.uk', address: 'Guildhall Yard East, London, EC2V 5AE' },
+      { name: 'Metropolitan Police', type: 'Regional Police', phone: '101', website: 'https://www.met.police.uk', address: 'New Scotland Yard, Victoria Embankment, London, SW1A 2JL' },
+      { name: 'ICO', type: 'Data Breaches', phone: '0303 123 1113', website: 'https://ico.org.uk', address: 'Wycliffe House, Water Lane, Wilmslow, SK9 5AF' }
+    ]
+  },
+  'GB-UKJ': {
+    name: 'South East England',
+    centers: [
+      { name: 'Thames Valley Police', type: 'Regional Police', phone: '101', website: 'https://www.thamesvalley.police.uk', address: 'Kidlington, Oxford, OX5 2NX' },
+      { name: 'Surrey Police', type: 'Regional Police', phone: '101', website: 'https://www.surrey.police.uk', address: 'Mount Browne, Sandy Lane, Guildford, GU3 1HG' },
+      { name: 'Kent Police', type: 'Regional Police', phone: '101', website: 'https://www.kent.police.uk', address: 'Sutton Road, Maidstone, ME15 9BZ' }
+    ]
+  },
+  'GB-UKK': {
+    name: 'South West England',
+    centers: [
+      { name: 'Avon & Somerset Police', type: 'Regional Police', phone: '101', website: 'https://www.avonandsomerset.police.uk', address: 'Valley Road, Portishead, Bristol, BS20 8QJ' },
+      { name: 'Devon & Cornwall Police', type: 'Regional Police', phone: '101', website: 'https://www.devon-cornwall.police.uk', address: 'Middlemoor, Exeter, EX2 7HQ' },
+      { name: 'Crimestoppers', type: 'Anonymous Reporting', phone: '0800 555 111', website: 'https://crimestoppers-uk.org', address: 'UK-wide, 100% Anonymous' }
+    ]
+  },
+  'GB-UKL': {
+    name: 'Wales',
+    centers: [
+      { name: 'South Wales Police', type: 'Regional Police', phone: '101', website: 'https://www.south-wales.police.uk', address: 'Cowbridge Road, Bridgend, CF31 3SU' },
+      { name: 'North Wales Police', type: 'Regional Police', phone: '101', website: 'https://www.north-wales.police.uk', address: 'Glan y Don, Colwyn Bay, LL29 8AW' },
+      { name: 'Dyfed-Powys Police', type: 'Regional Police', phone: '101', website: 'https://www.dyfed-powys.police.uk', address: 'Llangunnor, Carmarthen, SA31 2PF' }
+    ]
+  },
+  'GB-UKM': {
+    name: 'Scotland',
+    centers: [
+      { name: 'Police Scotland', type: 'Scotland Only', phone: '101', website: 'https://www.scotland.police.uk', address: 'Tulliallan Castle, Kincardine, FK10 4BE' },
+      { name: 'Cyber & Fraud Centre Scotland', type: 'Incident Response', phone: '0800 1670 623', website: 'https://www.cyberfraudcentre.com', address: 'Glasgow, Scotland' },
+      { name: 'CyberScotland', type: 'Advice & Guidance', phone: '', website: 'https://www.cyberscotland.com', address: 'Scottish Government, Edinburgh' }
+    ]
+  },
+  'GB-UKN': {
+    name: 'Northern Ireland',
+    centers: [
+      { name: 'PSNI', type: 'Regional Police', phone: '101', website: 'https://www.psni.police.uk', address: 'Brooklyn, 65 Knock Road, Belfast, BT5 6LE' },
+      { name: 'NI Cyber Security Centre', type: 'Government Agency', phone: '101', website: 'https://www.nicybersecuritycentre.gov.uk', address: 'Belfast, Northern Ireland' },
+      { name: 'Crimestoppers', type: 'Anonymous Reporting', phone: '0800 555 111', website: 'https://crimestoppers-uk.org', address: 'UK-wide, 100% Anonymous' }
+    ]
+  }
+};
+
+/** @type {boolean} Guard flag — prevents duplicate message listeners on repeated tab switches */
+let regionMapInitialized = false;
+
+/**
+ * Initialises the interactive UK map by listening for postMessage events.
+ *
+ * The SVG (loaded via <object> in index.html) contains an embedded <script> that
+ * handles all click highlighting internally and sends postMessage to this parent
+ * window. This function listens for those messages and updates the info panel.
+ *
+ * Using postMessage avoids all cross-origin / file:// protocol restrictions that
+ * would block direct contentDocument access or fetch/XHR approaches.
+ *
+ * Expected message payload: { type: 'regionClick', regionId: 'GB-UKx' }
+ */
+function initRegionMap() {
+  if (regionMapInitialized) return;
+
+  // Listen for region-click messages originating from the embedded SVG
+  window.addEventListener('message', function (e) {
+    if (e.data && e.data.type === 'regionClick') {
+      showRegionCenters(e.data.regionId);
+    }
+  });
+
+  regionMapInitialized = true;
+}
+
+/**
+ * Renders the center cards for a specific UK region.
+ * Replaces the prompt with region-specific cards.
+ */
+function showRegionCenters(regionId) {
+  const region = REGION_DATA[regionId];
+  if (!region) return;
+
+  // Hide the default prompt
+  const prompt = document.getElementById('region-prompt');
+  if (prompt) prompt.style.display = 'none';
+
+  // Remove any previously injected region cards
+  document.querySelectorAll('.region-dynamic-card').forEach(el => el.remove());
+
+  const container = document.getElementById('region-centers');
+  if (!container) return;
+
+  // Create region header card
+  const headerCard = document.createElement('div');
+  headerCard.className = 'center-card glass-card region-dynamic-card active';
+  headerCard.innerHTML = `
+    <div class="center-name" style="font-size: 1.2rem;">📍 ${region.name}</div>
+    <span class="center-type" style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);">Selected Region</span>
+    <p style="color: var(--text-secondary); margin-top: 0.75rem; font-size: 0.9rem;">Showing ${region.centers.length} reporting centre(s) near you.</p>
+  `;
+  container.insertBefore(headerCard, container.firstChild);
+
+  // Create individual center cards for this region
+  region.centers.forEach(center => {
+    const card = document.createElement('div');
+    card.className = 'center-card glass-card region-dynamic-card';
+    card.innerHTML = `
+      <div class="center-name">${center.name}</div>
+      <span class="center-type">${center.type}</span>
+      <div class="center-info">
+        ${center.phone ? `<div class="center-info-item">📞 <a href="tel:${center.phone.replace(/\s/g, '')}">${center.phone}</a></div>` : ''}
+        <div class="center-info-item">🌐 <a href="${center.website}" target="_blank">${center.website.replace('https://', '').replace('http://', '')}</a></div>
+        <div class="center-info-item">📍 ${center.address}</div>
+      </div>
+    `;
+    // Insert after header but before national cards
+    container.insertBefore(card, headerCard.nextSibling);
+  });
+}
+
+// =========================================================
 // CRIME REPORT FORM MODULE
 // =========================================================
 let currentFormStep = 1;
@@ -772,3 +949,4 @@ window.selectCategory = selectCategory;
 window.nextFormStep = nextFormStep;
 window.prevFormStep = prevFormStep;
 window.submitReport = submitReport;
+window.showRegionCenters = showRegionCenters;
