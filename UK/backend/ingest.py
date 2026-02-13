@@ -1,6 +1,6 @@
 """
 Data Ingestion Script - Load UK cybersecurity data into ChromaDB.
-Supports both JSON scraped content and PDF documents.
+Improved version with smart chunking for better RAG retrieval quality.
 """
 
 import json
@@ -8,136 +8,149 @@ import chromadb
 from chromadb.utils import embedding_functions
 from pathlib import Path
 import os
+import shutil
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# =========================
+# CONFIG
+# =========================
+CHROMA_PATH = os.getenv("CHROMA_DB_PATH", "./chroma_db")
+JSON_FOLDER = os.getenv("JSON_DATA_FOLDER", "../../")
+COLLECTION_NAME = "uk_cyber_knowledge"
+EMBED_MODEL = "all-MiniLM-L6-v2"
 
-def ingest_json_data(collection, json_path: str, region: str = "UK"):
-    """Ingest data from JSON file (scraped web content)."""
-    path = Path(json_path)
-    if not path.exists():
-        print(f"JSON file not found: {json_path}")
+
+# =========================
+# TEXT CHUNKING
+# =========================
+def chunk_text(text, chunk_size=800, overlap=150):
+    """
+    Split text into overlapping chunks.
+    Helps preserve numbered steps and context continuity.
+    """
+    chunks = []
+    start = 0
+
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start += chunk_size - overlap
+
+    return chunks
+
+
+# =========================
+# JSON INGESTION
+# =========================
+def ingest_json_data(collection, json_path: Path, region: str = "UK"):
+    """Ingest data from a single JSON file with smart chunking."""
+
+    if not json_path.exists():
+        print(f"File not found: {json_path}")
         return 0
-    
-    with open(path, 'r', encoding='utf-8') as f:
+
+    with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    
+
     if not data:
-        print("No data in JSON file")
+        print(f"No data in {json_path.name}")
         return 0
-    
+
     ids = []
     documents = []
     metadatas = []
-    
+    chunk_counter = 0
+
     for i, item in enumerate(data):
-        url = item.get('url', '')
-        content = item.get('content', '')
-        
-        if not content or len(content) < 100:
+        url = item.get("url", "")
+        content = item.get("content", "")
+
+        if not content or len(content) < 200:
             continue
-        
-        # Truncate very long content
-        if len(content) > 5000:
-            content = content[:5000]
-        
-        # Extract title from content or URL
-        title = url.split('/')[-1].replace('-', ' ').replace('_', ' ').title()
-        if title == '' or title == 'Https:':
+
+        # Clean excessive whitespace
+        content = " ".join(content.split())
+
+        # Generate title from URL
+        title = url.split("/")[-1].replace("-", " ").replace("_", " ").title()
+        if not title or title.lower().startswith("http"):
             title = f"UK Cybersecurity Article {i + 1}"
-        
-        doc_id = f"{region}_{path.stem}_{i}"
-        ids.append(doc_id)
-        documents.append(f"{title}\n\n{content}")
-        metadatas.append({
-            "region": region,
-            "source_url": url,
-            "title": title,
-            "type": item.get('type', 'html')
-        })
-    
-    if ids:
-        # Batch upsert (ChromaDB has limits)
-        batch_size = 100
-        for i in range(0, len(ids), batch_size):
-            batch_end = min(i + batch_size, len(ids))
-            collection.upsert(
-                ids=ids[i:batch_end],
-                documents=documents[i:batch_end],
-                metadatas=metadatas[i:batch_end]
-            )
-        print(f"Ingested {len(ids)} documents from JSON")
-    
-    return len(ids)
 
+        # Create chunks
+        chunks = chunk_text(content)
 
-def ingest_pdf_data(collection, pdf_dir: str, region: str = "UK"):
-    """Ingest data from PDF files."""
-    from pdf_processor import process_pdf_directory
-    
-    path = Path(pdf_dir)
-    if not path.exists():
-        print(f"PDF directory not found: {pdf_dir}")
-        return 0
-    
-    documents = process_pdf_directory(str(path), region)
-    
-    if not documents:
-        print("No PDFs to ingest")
-        return 0
-    
-    ids = [doc['id'] for doc in documents]
-    contents = [doc['content'] for doc in documents]
-    metadatas = [doc['metadata'] for doc in documents]
-    
-    # Batch upsert
+        for chunk_index, chunk in enumerate(chunks):
+            doc_id = f"{region}_{json_path.stem}_{i}_{chunk_index}"
+
+            ids.append(doc_id)
+
+            # Include title in document body to strengthen retrieval
+            documents.append(f"{title}\n\n{chunk}")
+
+            metadatas.append({
+                "region": region,
+                "source_url": url,
+                "title": title,
+                "type": item.get("type", "html")
+            })
+
+            chunk_counter += 1
+
+    # Batch upsert for performance
     batch_size = 100
     for i in range(0, len(ids), batch_size):
-        batch_end = min(i + batch_size, len(ids))
         collection.upsert(
-            ids=ids[i:batch_end],
-            documents=contents[i:batch_end],
-            metadatas=metadatas[i:batch_end]
+            ids=ids[i:i + batch_size],
+            documents=documents[i:i + batch_size],
+            metadatas=metadatas[i:i + batch_size]
         )
-    
-    print(f"Ingested {len(ids)} chunks from PDFs")
-    return len(ids)
+
+    print(f"Ingested {chunk_counter} chunks from {json_path.name}")
+    return chunk_counter
 
 
+# =========================
+# MAIN
+# =========================
 def main():
+    print("=== Starting Ingestion ===")
+
+    # Clean rebuild (prevents embedding mismatch issues)
+    if Path(CHROMA_PATH).exists():
+        print("Deleting existing ChromaDB folder for clean rebuild...")
+        shutil.rmtree(CHROMA_PATH)
+
     # Initialize ChromaDB
-    chroma_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
-    client = chromadb.PersistentClient(path=chroma_path)
-    
-    # Embedding function
+    client = chromadb.PersistentClient(path=CHROMA_PATH)
+
     ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name="all-MiniLM-L6-v2"
+        model_name=EMBED_MODEL
     )
-    
-    # Create or get collection
-    collection = client.get_or_create_collection(
-        name="uk_cyber_knowledge",
+
+    collection = client.create_collection(
+        name=COLLECTION_NAME,
         embedding_function=ef
     )
-    
-    print(f"Collection has {collection.count()} existing documents")
-    
-    # Ingest JSON data
-    json_path = os.getenv("JSON_DATA_PATH", "../../cyber_chatbot_UK1.json")
-    json_count = ingest_json_data(collection, json_path)
-    
-    # Ingest PDFs (if any exist)
-    pdf_dir = "./pdfs"
-    if Path(pdf_dir).exists():
-        pdf_count = ingest_pdf_data(collection, pdf_dir)
-    else:
-        pdf_count = 0
-        print(f"No PDF directory found at {pdf_dir}. Create it and add PDFs to ingest.")
-    
-    print(f"\n=== Ingestion Complete ===")
-    print(f"JSON documents: {json_count}")
-    print(f"PDF chunks: {pdf_count}")
+
+    print("Collection created.")
+
+    # Load all UK JSON files
+    json_files = list(Path(JSON_FOLDER).glob("cyber_chatbot_UK*.json"))
+
+    if not json_files:
+        print("No JSON files found.")
+        return
+
+    total_chunks = 0
+
+    for json_file in json_files:
+        total_chunks += ingest_json_data(collection, json_file)
+
+    print("\n=== Ingestion Complete ===")
+    print(f"Total chunks ingested: {total_chunks}")
     print(f"Total in collection: {collection.count()}")
 
 
