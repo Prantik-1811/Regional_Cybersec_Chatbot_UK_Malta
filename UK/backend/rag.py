@@ -1,6 +1,12 @@
 """
 RAG Pipeline - Retrieval-Augmented Generation for UK Cybersecurity chatbot.
 Optimised for faster response time and better grounding.
+
+This module handles the core AI logic:
+1. Receives a user question.
+2. vector searches the database for relevant chunks (Retrieval).
+3. Constructs a prompt with the retrieved context.
+4. Generates a grounded answer using the local LLM (Generation).
 """
 
 import chromadb
@@ -12,11 +18,15 @@ load_dotenv()
 
 
 # -------------------------
-# RAG Pipeline
+# RAG Pipeline Class
 # -------------------------
 
 class RAGPipeline:
     def __init__(self):
+        """
+        Initialize vector DB connection and LLM model.
+        """
+        # 1. Setup ChromaDB
         chroma_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
         self.client = chromadb.PersistentClient(path=chroma_path)
 
@@ -24,6 +34,7 @@ class RAGPipeline:
             model_name="all-MiniLM-L6-v2"
         )
 
+        # Attempt to load existing collection, or create if missing
         try:
             self.collection = self.client.get_collection(
                 name="uk_cyber_knowledge",
@@ -37,6 +48,7 @@ class RAGPipeline:
             )
             print("Created new collection: uk_cyber_knowledge")
 
+        # 2. Setup LLM (Ollama)
         self.llm = None
         ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
@@ -44,7 +56,8 @@ class RAGPipeline:
             from langchain_ollama import ChatOllama
             from langchain_core.prompts import ChatPromptTemplate
 
-            # 🔥 Faster model + token limit
+            # Optimization: Using 'llama3.2' with 'num_predict=300' for faster, concise responses.
+            # Temperature 0 ensures the model sticks to facts (less creative hallucinations).
             self.llm = ChatOllama(
                 model="llama3.2",
                 temperature=0,
@@ -60,7 +73,15 @@ class RAGPipeline:
 
 
     def query(self, query_text: str, region: str = "UK"):
-        """Query the knowledge base and generate a response using RAG."""
+        """
+        Execute the full RAG workflow for a query.
+        
+        Steps:
+        1. Search DB for top 3 relevant chunks.
+        2. Format context string.
+        3. Prompt LLM with context + question.
+        4. Return answer and source metadata.
+        """
 
         if not self.llm:
             return (
@@ -68,7 +89,8 @@ class RAGPipeline:
                 "Please ensure Ollama is started."
             ), []
 
-        # 1️⃣ Faster retrieval (reduced results)
+        # 1️⃣ Fast Retrieval
+        # We limit results to 2 for speed. Quality > Quantity.
         try:
             results = self.collection.query(
                 query_texts=[query_text],
@@ -77,6 +99,7 @@ class RAGPipeline:
         except Exception as e:
             return f"Vector database error: {e}", []
 
+        # Parse results (Chroma returns lists of lists)
         documents = results.get("documents", [[]])[0]
         metadatas = results.get("metadatas", [[]])[0]
 
@@ -86,10 +109,12 @@ class RAGPipeline:
                 "For official UK guidance, please visit ncsc.gov.uk."
             ), []
 
-        # 2️⃣ Limit context size (major speed boost)
+        # 2️⃣ Context limiting
+        # Truncate total context to 2000 chars to avoid hitting token limits and ensure speed.
         context = "\n\n".join(documents[:2])[:2000]
 
-        # 3️⃣ Stronger grounding prompt
+        # 3️⃣ Strong Grounding Prompt
+        # Forces the model to use the context and speak in British English.
         prompt = self.ChatPromptTemplate.from_template("""
 You are CyberSafe AI, a UK cybersecurity assistant.
 
@@ -97,7 +122,7 @@ Guidelines:
 - Use the provided context to inform your answer.
 - If the context is limited, provide general UK cybersecurity guidance.
 - Do not invent specific statistics or fake sources.
-- Use British English.
+- Use British English spelling (e.g. 'defence').
 - If cybercrime is mentioned, recommend reporting to Action Fraud.
 
 Context:
@@ -109,7 +134,7 @@ User Question:
 Answer:
 """)
 
-        # 4️⃣ Generate response
+        # 4️⃣ Generate Response
         try:
             chain = prompt | self.llm
             response = chain.invoke({
@@ -120,7 +145,8 @@ Answer:
         except Exception as e:
             return f"LLM generation error: {e}", []
 
-        # 5️⃣ Clean + deduplicate sources
+        # 5️⃣ Deduplicate Sources
+        # Often multiple chunks come from the same URL, we only want to list it once.
         seen = set()
         sources = []
 
