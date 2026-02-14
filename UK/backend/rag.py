@@ -55,11 +55,33 @@ class RAGPipeline:
         except Exception as e:
             print(f"Warning: Ollama not available: {e}")
 
+    # Common greetings to intercept before RAG retrieval
+    GREETINGS = {
+        "hi", "hello", "hey", "hiya", "howdy", "greetings",
+        "good morning", "good afternoon", "good evening",
+        "what's up", "whats up", "sup", "yo"
+    }
+
+    GREETING_RESPONSE = (
+        "Hello! I'm **CyberSafe AI**, your UK cybersecurity assistant.\n\n"
+        "I can help you with:\n"
+        "• Reporting cyber crime and fraud\n"
+        "• Understanding common cyber threats\n"
+        "• Protecting yourself and your organisation online\n"
+        "• UK government cybersecurity guidance\n\n"
+        "Ask me a cybersecurity question to get started!"
+    )
 
     def query(self, query_text: str, region: str = "UK"):
 
         if not self.llm:
             return "The local AI engine is not running. Please start Ollama.", []
+
+        # --------------------------------------------------
+        # 0️⃣ GREETING DETECTION (skip RAG for greetings)
+        # --------------------------------------------------
+        if query_text.strip().lower().rstrip("!?.,") in self.GREETINGS:
+            return self.GREETING_RESPONSE, []
 
         # --------------------------------------------------
         # 1️⃣ DEEP RETRIEVAL (Slightly Increased Depth)
@@ -80,10 +102,9 @@ class RAGPipeline:
             return "The knowledge base does not contain sufficient information.", []
 
         # --------------------------------------------------
-        # 2️⃣ SMART FILTER (Balanced Strictness)
+        # 2️⃣ SMART FILTER (Relaxed — rely on semantic similarity)
         # --------------------------------------------------
 
-        query_words = set(re.findall(r"\w+", query_text.lower()))
         candidates = []
 
         for doc, meta, dist in zip(documents, metadatas, distances):
@@ -91,14 +112,9 @@ class RAGPipeline:
             if dist is None:
                 continue
 
-            # Slightly relaxed similarity threshold
-            if dist < 1.2:
-
-                doc_words = set(re.findall(r"\w+", doc.lower()))
-                overlap = len(query_words.intersection(doc_words))
-
-                if overlap >= 1:  # was 2 (too strict sometimes)
-                    candidates.append((dist, doc, meta))
+            # Semantic similarity threshold (L2 distance, lower = better)
+            if dist < 1.5:
+                candidates.append((dist, doc, meta))
 
         if not candidates:
             return "The knowledge base does not contain sufficient information.", []
@@ -195,7 +211,14 @@ class RAGPipeline:
             return f"LLM generation error: {e}", []
 
         # --------------------------------------------------
-        # 7️⃣ CLEAN SOURCES
+        # 7️⃣ FALLBACK CHECK — suppress sources if LLM declined
+        # --------------------------------------------------
+        fallback_phrase = "knowledge base does not contain sufficient information"
+        if fallback_phrase in answer.lower():
+            return answer, []
+
+        # --------------------------------------------------
+        # 8️⃣ CLEAN SOURCES
         # --------------------------------------------------
 
         seen = set()
@@ -216,3 +239,97 @@ class RAGPipeline:
                 })
 
         return answer, sources
+
+
+    def query_stream(self, query_text: str, region: str = "UK"):
+        """
+        Generator that yields token-by-token response for streaming.
+        Used by the /chat streaming endpoint.
+        """
+        if not self.llm:
+            yield "The local AI engine is not running. Please start Ollama."
+            return
+
+        # Handle greetings without hitting the LLM
+        greeting_words = {
+            "hi", "hello", "hey", "help", "thanks", "thank",
+            "bye", "goodbye", "ok", "okay", "yo", "sup",
+            "good", "morning", "evening", "afternoon"
+        }
+        query_lower = query_text.strip().lower().rstrip("!?.,")
+        query_tokens = set(query_lower.split())
+
+        if query_tokens.issubset(greeting_words) or len(query_lower) < 4:
+            yield (
+                "Hello! I'm your UK cybersecurity assistant. "
+                "Ask me anything about cyber threats, protection advice, "
+                "or how to report a crime."
+            )
+            return
+
+        # Retrieve and filter
+        try:
+            results = self.collection.query(
+                query_texts=[query_text],
+                n_results=10
+            )
+        except Exception as e:
+            yield f"Vector database error: {e}"
+            return
+
+        documents = results.get("documents", [[]])[0]
+        metadatas = results.get("metadatas", [[]])[0]
+        distances = results.get("distances", [[]])[0]
+
+        if not documents:
+            yield "The knowledge base does not contain sufficient information."
+            return
+
+        candidates = []
+        for doc, meta, dist in zip(documents, metadatas, distances):
+            if dist is not None and dist < 1.5:
+                candidates.append((dist, doc, meta))
+
+        if not candidates:
+            yield "The knowledge base does not contain sufficient information."
+            return
+
+        candidates.sort(key=lambda x: x[0])
+
+        # Build context
+        selected_docs = []
+        used_urls = set()
+        for dist, doc, meta in candidates:
+            url = meta.get("source_url", "unknown")
+            if url not in used_urls:
+                selected_docs.append(doc)
+                used_urls.add(url)
+            if len(selected_docs) >= 5:
+                break
+
+        context = ""
+        for doc in selected_docs:
+            if len(context) + len(doc) <= 3500:
+                context += "\n\n" + doc
+            else:
+                break
+
+        prompt = self.ChatPromptTemplate.from_template("""
+    You are CyberSafe AI, a UK cybersecurity assistant.
+    Use ONLY information from the context. Write naturally in British English.
+
+    Context:
+    {context}
+
+    User Question:
+    {question}
+
+    Grounded Response:
+    """)
+
+        try:
+            chain = prompt | self.llm
+            for chunk in chain.stream({"question": query_text, "context": context}):
+                yield chunk.content
+        except Exception as e:
+            yield f"LLM generation error: {e}"
