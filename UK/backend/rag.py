@@ -1,47 +1,32 @@
 """
 RAG Pipeline - Retrieval-Augmented Generation for UK Cybersecurity chatbot.
-HIGH-PRECISION SPECIALISED VERSION
+ULTRA-STRICT GROUNDING VERSION
 """
-
-# Import ChromaDB for vector database operations
-# Import embedding function utilities from ChromaDB
-# OS module for environment variable handling
-# Load environment variables from .env file
-# Load environment variables at startup
-
 
 import chromadb
 from chromadb.utils import embedding_functions
 import os
+import re
 from dotenv import load_dotenv
 load_dotenv()
 
 
 class RAGPipeline:
     def __init__(self):
-        # Get persistent database path from environment variable
-        # Default to ./chroma_db if not specified
-        chroma_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
 
-        # Create persistent Chroma client (data stored on disk)
+        chroma_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
         self.client = chromadb.PersistentClient(path=chroma_path)
 
-        # Use SentenceTransformer model for text embeddings
-        # all-MiniLM-L6-v2 is lightweight and efficient for semantic search
         self.ef = embedding_functions.SentenceTransformerEmbeddingFunction(
             model_name="all-MiniLM-L6-v2"
         )
 
-        # Try loading existing collection
         try:
             self.collection = self.client.get_collection(
                 name="uk_cyber_knowledge",
                 embedding_function=self.ef
             )
-            # Print number of stored document chunks
             print(f"Loaded collection with {self.collection.count()} chunks")
-
-        # If collection doesn't exist, create a new one
         except Exception:
             self.collection = self.client.create_collection(
                 name="uk_cyber_knowledge",
@@ -49,183 +34,170 @@ class RAGPipeline:
             )
             print("Created new collection: uk_cyber_knowledge")
 
-        # Placeholder for LLM
         self.llm = None
-
-        # Get Ollama base URL from environment
         ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-        # Attempt to connect to Ollama LLM via LangChain
         try:
             from langchain_ollama import ChatOllama
             from langchain_core.prompts import ChatPromptTemplate
 
-            # Initialise LLM with deterministic output (temperature=0)
             self.llm = ChatOllama(
                 model="llama3.2",
                 temperature=0,
                 base_url=ollama_base_url,
-                num_predict=300  # Max token generation limit
+                num_predict=400,
+                stop=["Sources:"]
             )
 
-            # Store prompt template class for later use
             self.ChatPromptTemplate = ChatPromptTemplate
-
             print(f"Connected to Ollama at {ollama_base_url}")
 
-        # If Ollama not running or not installed
         except Exception as e:
             print(f"Warning: Ollama not available: {e}")
 
 
     def query(self, query_text: str, region: str = "UK"):
-        """Highly specialised and relevance-ranked RAG query."""
 
-        # If LLM not connected, return early
         if not self.llm:
-            return (
-                "The local AI engine is not running. Please start Ollama."
-            ), []
+            return "The local AI engine is not running. Please start Ollama.", []
 
         # --------------------------------------------------
-        # 🔹 1. DEEP RETRIEVAL (More candidate chunks)
+        # 1️⃣ DEEP RETRIEVAL (Slightly Increased Depth)
         # --------------------------------------------------
-        # Retrieve top 8 most similar chunks from vector DB
         try:
             results = self.collection.query(
                 query_texts=[query_text],
-                n_results=8   # Increased retrieval depth
+                n_results=10  # increased for better candidate pool
             )
         except Exception as e:
-            # Handle database errors safely
             return f"Vector database error: {e}", []
 
-        # Extract documents, metadata and similarity distances
         documents = results.get("documents", [[]])[0]
         metadatas = results.get("metadatas", [[]])[0]
         distances = results.get("distances", [[]])[0]
 
-        # If nothing retrieved, return fallback
         if not documents:
-            return (
-                "The knowledge base does not contain sufficient information."
-            ), []
+            return "The knowledge base does not contain sufficient information.", []
 
         # --------------------------------------------------
-        # 🔹 2. HARD RELEVANCE FILTERING
+        # 2️⃣ SMART FILTER (Balanced Strictness)
         # --------------------------------------------------
-        # Filter only highly relevant results
+
+        query_words = set(re.findall(r"\w+", query_text.lower()))
         candidates = []
 
         for doc, meta, dist in zip(documents, metadatas, distances):
 
-            # Skip invalid distance results
             if dist is None:
                 continue
 
-            # Strict similarity threshold (lower distance = better match)
-            if dist < 1.05:
-                candidates.append((dist, doc, meta))
+            # Slightly relaxed similarity threshold
+            if dist < 1.2:
 
-        # If no strong candidates found
+                doc_words = set(re.findall(r"\w+", doc.lower()))
+                overlap = len(query_words.intersection(doc_words))
+
+                if overlap >= 1:  # was 2 (too strict sometimes)
+                    candidates.append((dist, doc, meta))
+
         if not candidates:
-            return (
-                "The knowledge base does not contain sufficient information."
-            ), []
+            return "The knowledge base does not contain sufficient information.", []
 
-        # Sort by strongest semantic similarity
         candidates.sort(key=lambda x: x[0])
 
         # --------------------------------------------------
-        # 🔹 3. SOURCE DIVERSITY (Avoid same article spam)
+        # 3️⃣ SOURCE DIVERSITY (Same Logic)
         # --------------------------------------------------
-        # Select top diverse documents (avoid duplicate URLs)
+
         selected_docs = []
         selected_meta = []
         used_urls = set()
 
         for dist, doc, meta in candidates:
 
-            # Extract source URL from metadata
             url = meta.get("source_url", "unknown")
 
-            # Prefer different sources unless highly ranked
-            if url not in used_urls or len(selected_docs) < 2:
+            if url not in used_urls:
                 selected_docs.append(doc)
                 selected_meta.append(meta)
                 used_urls.add(url)
 
-            # Limit to 4 context chunks
-            if len(selected_docs) >= 4:
+            if len(selected_docs) >= 5:  # increased context depth
                 break
 
         # --------------------------------------------------
-        # 🔹 4. CONTROLLED CONTEXT WINDOW
+        # 4️⃣ CONTROL CONTEXT SIZE
         # --------------------------------------------------
-        # Limit total context size to prevent token overflow
-        max_chars = 3000
+
+        max_chars = 3500  # increased for richer responses
         context = ""
 
         for doc in selected_docs:
-            # Add document if within size limit
             if len(context) + len(doc) <= max_chars:
                 context += "\n\n" + doc
             else:
                 break
 
         # --------------------------------------------------
-        # 🔹 5. SPECIALISED EVIDENCE-BASED PROMPT
+        # 5️⃣ SPECIALISED GROUNDING PROMPT
         # --------------------------------------------------
-        # Create strict, controlled LLM prompt
+
         prompt = self.ChatPromptTemplate.from_template("""
-You are CyberSafe AI, a UK cybersecurity assistant.
+    You are CyberSafe AI, a UK cybersecurity assistant specialising in practical incident guidance.
 
-STRICT PROFESSIONAL RULES:
+    Your role is to transform the CONTEXT into a highly specific, grounded response.
 
-• Answer ONLY using information found in the context.
-• Extract specific actions, organisations, procedures, or steps when available.
-• Prefer concrete guidance over general cybersecurity advice.
-• Do NOT generate generic safety recommendations unless clearly stated in context.
-• Do NOT invent statistics, URLs, or procedures.
-• If multiple steps are present, present them clearly and logically.
-• Use British English spelling and tone.
+    STRICT RULES:
 
-If the answer is NOT clearly supported by the context, respond EXACTLY with:
-"The knowledge base does not contain sufficient information."
+    • Use ONLY information found in the context.
+    • Base your answer on concrete details from the articles.
+    • Mention specific techniques, examples, or scenarios described.
+    • If organisations, procedures, or recommendations are mentioned in the context, include them.
+    • Do NOT give generic cybersecurity advice.
+    • Do NOT add information that is not explicitly present.
+    • Do NOT invent statistics, contacts, or organisations.
+    • Write naturally in British English.
+    • Where helpful, reference article titles inside the response like:
+    (as discussed in "Article Title").
 
-Context:
-{context}
+    If the context lacks relevant information, respond exactly:
+    "The knowledge base does not contain sufficient information."
 
-User Question:
-{question}
+    Context:
+    {context}
 
-Answer:
-""")
+    User Question:
+    {question}
+
+    Grounded Response:
+    """)
 
         # --------------------------------------------------
-        # 🔹 6. GENERATE ANSWER
+        # 6️⃣ GENERATE
         # --------------------------------------------------
-        # Combine prompt and LLM using LangChain pipeline operator
+
         try:
             chain = prompt | self.llm
 
-            # Invoke LLM with context and question
             response = chain.invoke({
                 "question": query_text,
                 "context": context
             })
 
-            # Clean whitespace
             answer = response.content.strip()
 
+            # Additional hallucination guard
+            if any(word in answer.lower() for word in ["fbi", "us department", "europol", "interpol"]):
+                if answer.lower() not in context.lower():
+                    return "The knowledge base does not contain sufficient information.", []
+
         except Exception as e:
-            # Handle generation errors safely
             return f"LLM generation error: {e}", []
 
         # --------------------------------------------------
-        # 🔹 7. CLEAN + DEDUP SOURCES
+        # 7️⃣ CLEAN SOURCES
         # --------------------------------------------------
-        # Remove duplicate source URLs in final output
+
         seen = set()
         sources = []
 
@@ -243,5 +215,4 @@ Answer:
                     "type": metadata.get("type", "reference")
                 })
 
-        # Return final answer and structured source list
         return answer, sources

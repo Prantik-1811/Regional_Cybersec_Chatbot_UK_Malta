@@ -41,13 +41,46 @@ class UpdateChecker:
         self._load_cache()
     
     def _load_sources(self):
-        """Load the list of sources to monitor from the scraped data file."""
+        """
+        Load sources from:
+        - A single JSON file (original behavior)
+        - OR a folder containing cyber_chatbot_UK*.json files
+        """
         try:
-            with open(self.json_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                self.sources = data if isinstance(data, list) else []
-                self.total_sources = len(self.sources)
-                print(f"Loaded {self.total_sources} sources from {self.json_path}")
+            all_sources = []
+
+            # CASE 1: If path is a file → original behavior
+            if self.json_path.is_file():
+                with open(self.json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        all_sources.extend(data)
+
+            # CASE 2: If path is a directory → load UK1–UK4 automatically
+            elif self.json_path.is_dir():
+                json_files = sorted(self.json_path.glob("cyber_chatbot_UK*.json"))
+
+                if not json_files:
+                    print("No UK JSON files found in directory.")
+                else:
+                    for file in json_files:
+                        try:
+                            with open(file, 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                                if isinstance(data, list):
+                                    all_sources.extend(data)
+                                    print(f"Loaded {len(data)} sources from {file.name}")
+                        except Exception as file_error:
+                            print(f"Error reading {file.name}: {file_error}")
+
+            else:
+                print("Invalid JSON path provided.")
+
+            self.sources = all_sources
+            self.total_sources = len(self.sources)
+
+            print(f"Total sources loaded: {self.total_sources}")
+
         except Exception as e:
             print(f"Error loading sources: {e}")
             self.sources = []

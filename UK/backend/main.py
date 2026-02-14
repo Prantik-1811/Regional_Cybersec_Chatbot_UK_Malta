@@ -55,7 +55,7 @@ app.add_middleware(
 # ---------------------------------------------------------
 
 # Path to JSON knowledge base (configurable via environment variable)
-json_path = os.getenv("JSON_DATA_PATH", "../../cyber_chatbot_UK1.json")
+json_path = os.getenv("JSON_DATA_PATH", "../../Scraped files")
 
 # Initialise update checker (monitors content changes)
 update_checker = UpdateChecker(json_path)
