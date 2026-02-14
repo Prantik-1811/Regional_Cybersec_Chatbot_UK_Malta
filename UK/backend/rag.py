@@ -214,7 +214,10 @@ class RAGPipeline:
         # 7️⃣ FALLBACK CHECK — suppress sources if LLM declined
         # --------------------------------------------------
         fallback_phrase = "knowledge base does not contain sufficient information"
-        if fallback_phrase in answer.lower():
+        # Only suppress sources when the ENTIRE answer is the fallback,
+        # not when it appears as a passing remark in a longer response.
+        answer_stripped = answer.lower().strip().strip('"\'.')
+        if answer_stripped == fallback_phrase or answer_stripped == "the " + fallback_phrase:
             return answer, []
 
         # --------------------------------------------------
