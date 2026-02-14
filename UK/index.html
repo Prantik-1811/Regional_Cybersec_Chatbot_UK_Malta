@@ -1,5 +1,16 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+<!-- 
+  UK Cybersecurity Hub - Main HTML Entry Point
+  This single-page application (SPA) serves as the central hub for UK cyber intelligence.
+  
+  Key Features:
+  - Dynamic Tabs (Home, Live Threats, Reporting Centers, API Docs, About, Report Crime)
+  - Real-time threat map using SVG and Canvas animations
+  - Update notification banner
+  - Floating AI Chatbot widget
+  - Responsive Grid Layouts for articles and statistics
+-->
 
 <head>
   <meta charset="UTF-8">
@@ -12,11 +23,11 @@
   <meta name="keywords"
     content="UK cybersecurity, cyber crime reporting, Action Fraud, NCSC, cyber threats, phishing, ransomware">
 
-  <!-- Favicon -->
+  <!-- Favicon (Inline SVG for performance) -->
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
 
-  <!-- Styles -->
+  <!-- Stylesheets -->
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="styles/cyber-map.css">
 </head>
@@ -24,6 +35,7 @@
 <body>
   <!-- =========================================================
        HEADER / NAVIGATION
+       Contains the Logo, Main Navigation Tabs, and Theme Toggle
        ========================================================= -->
   <header class="header">
     <div class="header-content">
@@ -32,22 +44,26 @@
         <span>CyberSafe UK</span>
       </div>
 
+      <!-- Navigation Tabs: Uses data-tab attribute to switch content views via JS -->
       <nav class="nav-tabs">
         <button class="nav-tab active" data-tab="home">Home</button>
         <button class="nav-tab" data-tab="threats">Live Threats</button>
         <button class="nav-tab" data-tab="centers">Report Centers</button>
-        <button class="nav-tab" onclick="window.open('http://localhost:8001/docs', '_blank')">API & Docs</button>
+        <!-- API & Docs: Navigates to the FastAPI Swagger docs in the same tab (_self) -->
+        <button class="nav-tab" onclick="window.open('http://localhost:8001/docs', '_self')">API &amp; Docs</button>
         <button class="nav-tab" data-tab="about">About Us</button>
+        <!-- Distinct CTA button style for Reporting -->
         <button class="nav-tab" data-tab="report">Report Crime</button>
       </nav>
 
       <div class="header-actions">
+        <!-- Dark/Light Mode Toggle -->
         <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
       </div>
     </div>
   </header>
 
-  <!-- Update Notification Banner -->
+  <!-- Update Notification Banner (Hidden by default) -->
   <div id="update-banner" class="update-banner hidden">
     <div class="update-banner-content">
       <span class="update-icon">🔔</span>
@@ -57,13 +73,15 @@
   </div>
 
   <!-- =========================================================
-       MAIN CONTENT
+       MAIN CONTENT CONTAINER
+       Holds all the tabbed sections
        ========================================================= -->
   <main class="main-content">
     <div class="container">
 
       <!-- =====================================================
            HOME TAB
+           Landing page with hero, key stats, and news feed
            ===================================================== -->
       <section id="home" class="tab-content active">
 
@@ -76,10 +94,11 @@
           </p>
         </div>
 
-        <!-- Stats Cards -->
+        <!-- Animated Statistics Cards -->
         <div class="stats-grid">
           <div class="stat-card glass-card">
             <div class="stat-icon">📊</div>
+            <!-- data-counter attribute triggers the counting animation in JS -->
             <div class="stat-value" data-counter="7780000">0</div>
             <div class="stat-label">Cyber Attacks in UK (2024)</div>
           </div>
@@ -104,36 +123,36 @@
         </div>
 
         <!-- =====================================================
-           NEWS & INSIGHTS (Dynamic Container)
+           NEWS & INSIGHTS (Dynamic Feed)
            ===================================================== -->
         <section id="insights" class="slider-section">
           <div class="container" id="news-container">
 
-            <!-- VIEW 1: Article Feed Grid -->
+            <!-- STATE 1: Article Feed Grid (Default View) -->
             <div id="news-feed">
               <div class="section-header">
                 <h2 class="section-title">📰 Cyber Security Knowledge Base</h2>
                 <p class="section-subtitle">Browse articles scraped from UK cybersecurity sources</p>
               </div>
 
-              <!-- Category Filter Bar -->
+              <!-- Category Filter Bar (Populated by JS) -->
               <div class="category-filter" id="category-filter">
                 <button class="filter-btn active" onclick="filterArticles('all')">All</button>
-                <!-- Dynamically populated by JS -->
+                <!-- JS will inject buttons here -->
               </div>
 
-              <!-- Article Grid -->
+              <!-- Article Grid Container (Populated by JS) -->
               <div class="article-grid" id="article-grid">
-                <!-- Populated by JS -->
+                <!-- JS will inject article cards here -->
               </div>
 
-              <!-- Load More -->
+              <!-- Pagination / Load More -->
               <div class="load-more-container" id="load-more-container" style="display:none;">
                 <button class="load-more-btn" onclick="loadMoreArticles()">Load More Articles</button>
               </div>
             </div>
 
-            <!-- VIEW 2: Article Reader (Hidden by default) -->
+            <!-- STATE 2: Full Article Reader (Hidden by default) -->
             <div id="article-viewer" class="hidden">
               <button onclick="closeArticle()" class="back-btn">
                 ← Back to Articles
@@ -149,7 +168,7 @@
                 </header>
 
                 <div class="article-body" id="viewer-content">
-                  <!-- Full Content Injected Here -->
+                  <!-- JS Injects Full Content Paragraphs Here -->
                 </div>
 
                 <footer class="article-footer">
@@ -158,11 +177,11 @@
                 </footer>
               </article>
 
-              <!-- Suggested Articles -->
+              <!-- Related/Suggested Articles -->
               <div class="suggested-section">
                 <h3 class="suggested-title">📚 Related Articles</h3>
                 <div class="suggested-grid" id="suggested-articles">
-                  <!-- Populated by JS -->
+                  <!-- JS Injects Related Cards -->
                 </div>
               </div>
             </div>
@@ -170,7 +189,7 @@
           </div>
         </section>
 
-        <!-- Quick Actions -->
+        <!-- Quick Access Navigation Cards -->
         <div class="stats-grid" style="margin-top: 3rem;">
           <div class="stat-card glass-card" style="cursor: pointer;" onclick="switchTab('report')">
             <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">🚨</div>
@@ -197,6 +216,7 @@
 
       <!-- =====================================================
            LIVE THREATS TAB
+           Displays the interactive SVG map and attack stats
            ===================================================== -->
       <section id="threats" class="tab-content">
         <h1 style="margin-bottom: 2rem;">🌐 Live Cyber Threat Map</h1>
@@ -205,26 +225,26 @@
           <!-- Map Container -->
           <div class="map-container glass-card">
             <div class="world-map">
-              <!-- Accurate World Map from external SVG -->
+              <!-- Animated attacks are overlaid here via JS/CSS -->
               <object data="assets/world-map.svg" type="image/svg+xml" style="width: 100%; height: 100%;">
-                <!-- Fallback SVG -->
+                <!-- Fallback SVG if asset is missing -->
                 <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
                   <path d="M 150 100 Q 200 80 250 100 L 280 150 Q 300 200 280 250 L 200 280" fill="currentColor" />
                   <circle cx="480" cy="140" r="8" fill="#0ea5e9" opacity="0.8" />
                 </svg>
               </object>
 
-              <!-- Attack Animation Container -->
+              <!-- Attack Animation Layer (JS appends elements here) -->
               <div class="attack-lines" style="position: absolute; inset: 0; pointer-events: none;"></div>
 
-              <!-- Attack Points -->
+              <!-- Static Attack Points for ambience -->
               <div class="attack-point" style="left: 75%; top: 25%;"></div>
               <div class="attack-point" style="left: 82%; top: 40%; animation-delay: 0.5s;"></div>
               <div class="attack-point" style="left: 20%; top: 35%; animation-delay: 1s;"></div>
             </div>
           </div>
 
-          <!-- Threat Stats -->
+          <!-- Live Stats Panel -->
           <div class="threat-stats">
             <div class="threat-stat-card glass-card">
               <div class="threat-stat-header">
@@ -250,19 +270,20 @@
               <div class="threat-stat-value" data-stat="active">0</div>
             </div>
 
+            <!-- Dynamic list of attack types -->
             <div class="threat-stat-card glass-card">
               <div class="threat-stat-header">
                 <div class="threat-stat-icon info">📊</div>
                 <span class="threat-stat-title">Attack Types</span>
               </div>
               <div class="threat-type-list">
-                <!-- Dynamically populated -->
+                <!-- JS Populated -->
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Attack Legend -->
+        <!-- Static Infographics -->
         <div class="stats-grid" style="margin-top: 2rem;">
           <div class="stat-card glass-card">
             <h4 style="margin-bottom: 1rem;">🎯 Top Source Countries</h4>
@@ -310,113 +331,62 @@
 
       <!-- =====================================================
            REPORTING CENTERS TAB
+           Contact info for agencies like Action Fraud
            ===================================================== -->
       <section id="centers" class="tab-content">
         <h1 style="margin-bottom: 2rem;">📍 UK Cybercrime Reporting Centers</h1>
 
         <div class="centers-section">
-          <!-- UK Map -->
+          <!-- 
+            UK Interactive Map — Click a region to see local reporting centres.
+            The SVG is loaded via <object> and contains an embedded <script> that
+            handles click highlighting and sends postMessage({ type: 'regionClick', regionId }) 
+            to this parent window. main.js listens for these messages in initRegionMap().
+          -->
           <div class="uk-map-container glass-card">
-            <div class="uk-map"
+            <div class="uk-map" id="uk-map-interactive"
               style="background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; position: relative; min-height: 500px;">
-              <!-- Accurate UK Map from external SVG -->
-              <object data="assets/uk-map.svg" type="image/svg+xml" style="width: 100%; max-height: 600px;">
-                <!-- Fallback -->
+              <object id="uk-map-svg" data="assets/uk-map.svg" type="image/svg+xml"
+                style="width: 100%; max-height: 600px;">
                 <p>UK Map</p>
               </object>
             </div>
           </div>
 
-          <!-- Center Cards -->
-          <div class="center-cards">
-            <!-- Action Fraud -->
-            <div class="center-card glass-card active">
-              <div class="center-name">Action Fraud</div>
-              <span class="center-type">National Reporting Centre</span>
-              <div class="center-info">
-                <div class="center-info-item">
-                  📞 <a href="tel:03001232040">0300 123 2040</a>
-                </div>
-                <div class="center-info-item">
-                  🌐 <a href="https://www.actionfraud.police.uk" target="_blank">actionfraud.police.uk</a>
-                </div>
-                <div class="center-info-item">
-                  📍 City of London Police, London
-                </div>
-                <div class="center-info-item">
-                  ⏰ 24/7 Online | Phone: Mon-Fri 8am-8pm
-                </div>
+          <!-- Dynamic Region Info Panel (populated by JS on click) -->
+          <div class="center-cards" id="region-centers">
+            <!-- Default prompt before any region is selected -->
+            <div class="region-prompt glass-card" id="region-prompt">
+              <div style="text-align: center; padding: 3rem 1.5rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🗺️</div>
+                <h3 style="margin-bottom: 0.75rem;">Click a Region</h3>
+                <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                  Click on any area of the UK map to discover your nearest cybercrime reporting centres,
+                  with phone numbers, websites, and addresses.
+                </p>
               </div>
             </div>
 
-            <!-- NCSC -->
+            <!-- National Services (always visible) -->
             <div class="center-card glass-card">
-              <div class="center-name">National Cyber Security Centre (NCSC)</div>
+              <div class="center-name">Report Fraud (National)</div>
+              <span class="center-type">National Reporting Service</span>
+              <div class="center-info">
+                <div class="center-info-item">📞 <a href="tel:03001232040">0300 123 2040</a></div>
+                <div class="center-info-item">🌐 <a href="https://reportfraud.police.uk"
+                    target="_blank">reportfraud.police.uk</a></div>
+                <div class="center-info-item">📍 City of London Police, London</div>
+                <div class="center-info-item">⏰ 24/7 for businesses under attack</div>
+              </div>
+            </div>
+            <div class="center-card glass-card">
+              <div class="center-name">NCSC</div>
               <span class="center-type">Government Agency</span>
               <div class="center-info">
-                <div class="center-info-item">
-                  🌐 <a href="https://www.ncsc.gov.uk" target="_blank">ncsc.gov.uk</a>
-                </div>
-                <div class="center-info-item">
-                  📧 Report suspicious emails to: report@phishing.gov.uk
-                </div>
-                <div class="center-info-item">
-                  📍 London, UK
-                </div>
-              </div>
-            </div>
-
-            <!-- Police Scotland -->
-            <div class="center-card glass-card">
-              <div class="center-name">Police Scotland</div>
-              <span class="center-type" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">Scotland
-                Only</span>
-              <div class="center-info">
-                <div class="center-info-item">
-                  📞 <a href="tel:101">101</a> (Non-emergency)
-                </div>
-                <div class="center-info-item">
-                  🌐 <a href="https://www.scotland.police.uk" target="_blank">scotland.police.uk</a>
-                </div>
-                <div class="center-info-item">
-                  📍 Edinburgh, Scotland
-                </div>
-              </div>
-            </div>
-
-            <!-- Crimestoppers -->
-            <div class="center-card glass-card">
-              <div class="center-name">Crimestoppers</div>
-              <span class="center-type" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">Anonymous
-                Reporting</span>
-              <div class="center-info">
-                <div class="center-info-item">
-                  📞 <a href="tel:0800555111">0800 555 111</a>
-                </div>
-                <div class="center-info-item">
-                  🌐 <a href="https://crimestoppers-uk.org" target="_blank">crimestoppers-uk.org</a>
-                </div>
-                <div class="center-info-item">
-                  📍 UK-wide, 100% Anonymous
-                </div>
-              </div>
-            </div>
-
-            <!-- ICO -->
-            <div class="center-card glass-card">
-              <div class="center-name">Information Commissioner's Office (ICO)</div>
-              <span class="center-type" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">Data
-                Breaches</span>
-              <div class="center-info">
-                <div class="center-info-item">
-                  📞 <a href="tel:03031231113">0303 123 1113</a>
-                </div>
-                <div class="center-info-item">
-                  🌐 <a href="https://ico.org.uk" target="_blank">ico.org.uk</a>
-                </div>
-                <div class="center-info-item">
-                  📍 Wilmslow, Cheshire
-                </div>
+                <div class="center-info-item">📞 <a href="tel:03000000000">0300 000 0000</a></div>
+                <div class="center-info-item">🌐 <a href="https://www.ncsc.gov.uk" target="_blank">ncsc.gov.uk</a></div>
+                <div class="center-info-item">📧 report@phishing.gov.uk</div>
+                <div class="center-info-item">📍 PO Box 74045, London, NW5 9HF</div>
               </div>
             </div>
           </div>
@@ -434,10 +404,11 @@
 
       <!-- =====================================================
            API & DOCS TAB
+           Documentation for developers
            ===================================================== -->
       <section id="docs" class="tab-content">
         <div class="docs-section">
-          <!-- Sidebar -->
+          <!-- Sidebar Nav -->
           <aside class="docs-sidebar glass-card">
             <nav class="docs-nav">
               <button class="docs-nav-item active">Getting Started</button>
@@ -449,7 +420,7 @@
             </nav>
           </aside>
 
-          <!-- Content -->
+          <!-- Documentation Body -->
           <div class="docs-content glass-card">
             <h1 class="docs-title">API Documentation</h1>
             <p class="docs-desc">
@@ -604,6 +575,7 @@
 
       <!-- =====================================================
            REPORT CRIME TAB
+           Interactive multi-step form
            ===================================================== -->
       <section id="report" class="tab-content">
         <div class="report-section">
@@ -618,7 +590,7 @@
           <div class="report-form glass-card">
             <form onsubmit="submitReport(event)">
 
-              <!-- Progress Steps -->
+              <!-- Progress Steps Visulization -->
               <div class="form-progress">
                 <div class="progress-step active">
                   <span class="progress-dot">1</span>
@@ -763,7 +735,7 @@
             </form>
           </div>
 
-          <!-- Alternative Reporting -->
+          <!-- Alternative Reporting Info -->
           <div class="glass-card" style="margin-top: 2rem; padding: 2rem;">
             <h3 style="margin-bottom: 1rem;">📞 Prefer to Report by Phone?</h3>
             <p style="color: var(--text-secondary);">
@@ -826,7 +798,7 @@
     </div>
   </footer>
 
-  <!-- Chatbot Widget -->
+  <!-- Floating Chatbot Widget -->
   <div id="chatbot-widget" class="chatbot-widget">
     <button class="chatbot-toggle" onclick="toggleChatbot()" title="Ask CyberSafe AI">
       💬
@@ -834,7 +806,15 @@
     <div class="chatbot-container hidden">
       <div class="chatbot-header">
         <span>🤖 CyberSafe AI</span>
-        <button class="chatbot-close" onclick="toggleChatbot()">×</button>
+        <!-- Header Actions: Fullscreen (⛶), Pop-out to new tab (↗), and Close (×) -->
+        <div class="chatbot-header-actions">
+          <!-- Expands the chatbot to fill the entire viewport -->
+          <button class="chatbot-action-btn" onclick="toggleChatFullscreen()" title="Toggle fullscreen">⛶</button>
+          <!-- Opens chat history in a standalone new browser tab -->
+          <button class="chatbot-action-btn" onclick="popoutChatbot()" title="Open in new tab">↗</button>
+          <!-- Closes / minimises the chatbot panel -->
+          <button class="chatbot-close" onclick="toggleChatbot()">×</button>
+        </div>
       </div>
       <div class="chatbot-messages" id="chatbot-messages">
         <div class="chat-message bot">
@@ -850,9 +830,7 @@
     </div>
   </div>
 
-
-
-  <!-- Scripts -->
+  <!-- Javascripts -->
   <script src="scripts/main.js"></script>
   <script src="scripts/chatbot.js"></script>
 </body>

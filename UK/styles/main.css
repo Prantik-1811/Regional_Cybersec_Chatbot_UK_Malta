@@ -813,6 +813,31 @@ img {
     text-decoration: underline;
 }
 
+/* --- Region Interactive Map Styles --- */
+
+/* Default prompt shown before any region is selected */
+.region-prompt {
+    border: 2px dashed var(--border-color);
+    background: transparent;
+}
+
+/* Slide-in animation for dynamically injected region cards */
+.region-dynamic-card {
+    animation: regionSlideIn 0.35s ease-out;
+}
+
+@keyframes regionSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* =========================================================
    API & DOCS TAB
    ========================================================= */
@@ -1464,6 +1489,35 @@ html {
     font-weight: 600;
 }
 
+/* Flex container for the header action buttons (fullscreen, popout, close) */
+.chatbot-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* Circular icon buttons for fullscreen (⛶) and pop-out (↗) actions */
+.chatbot-action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.chatbot-action-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(1.1);
+}
+
+/* Close (×) button — slightly larger font than action buttons for emphasis */
 .chatbot-close {
     width: 28px;
     height: 28px;
@@ -1481,6 +1535,46 @@ html {
 
 .chatbot-close:hover {
     background: rgba(255, 255, 255, 0.3);
+}
+
+/* =============================================
+   CHATBOT FULLSCREEN MODE
+   =============================================
+   When .chatbot-fullscreen is toggled on the widget,
+   the chatbot expands to fill the entire viewport.
+   The toggle FAB is hidden and the container becomes
+   fixed full-screen with no border-radius.
+   ============================================= */
+
+/* Make the widget cover the full viewport */
+.chatbot-widget.chatbot-fullscreen {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+}
+
+/* Hide the floating toggle button in fullscreen */
+.chatbot-widget.chatbot-fullscreen .chatbot-toggle {
+    display: none;
+}
+
+/* Stretch the container to fill the screen with no rounded corners */
+.chatbot-widget.chatbot-fullscreen .chatbot-container {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    bottom: 0;
+    right: 0;
+}
+
+/* Allow the message list to grow freely in fullscreen */
+.chatbot-widget.chatbot-fullscreen .chatbot-messages {
+    max-height: none;
+    flex: 1;
 }
 
 .chatbot-messages {
@@ -1779,6 +1873,7 @@ html {
 .hero-card .card-excerpt {
     font-size: 1rem;
     -webkit-line-clamp: 4;
+    line-clamp: 4;
 }
 
 /* Card sections */
@@ -1813,6 +1908,7 @@ html {
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -1823,6 +1919,7 @@ html {
     line-height: 1.6;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -2047,6 +2144,7 @@ html {
     margin-top: 0.25rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }

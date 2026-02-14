@@ -1,13 +1,20 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
+<!-- 
+  Main HTML file for the Malta Regional Chatbot.
+  It structures the chat interface, including the sidebar for history, 
+  the main chat area, and imports necessary styles and scripts.
+-->
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Malta Regional Chatbot</title>
 
-  <!-- CSS -->
+  <!-- CSS Resources -->
+  <!-- Common styles shared across regions -->
   <link rel="stylesheet" href="Styles/common.css">
+  <!-- Malta specific customizations -->
   <link rel="stylesheet" href="Styles/Malta.css">
 </head>
 
@@ -15,40 +22,51 @@
 
   <div class="app">
 
-    <!-- SIDEBAR -->
+    <!-- 
+      SIDEBAR SECTION 
+      Contains the chat history list and the 'New Chat' button.
+    -->
     <aside class="sidebar" id="sidebar">
       <h3>Chat History</h3>
+      <!-- Chat list populated dynamically by JS -->
       <ul class="chat-list" id="chatList"></ul>
 
       <button class="new-chat-btn" onclick="createNewChat()">
         + New Chat
       </button>
 
+      <!-- Closing ul tag seems redundant here as it's outside the list context, keeping valid structure -->
       </ul>
     </aside>
 
-    <!-- MAIN -->
+    <!-- 
+      MAIN CONTENT SECTION
+      Contains the top navigation, chat messages area, and input field.
+    -->
     <section class="main">
 
-      <!-- TOP BAR -->
+      <!-- TOP BAR: Navigation and Controls -->
       <div class="top-bar">
+        <!-- Sidebar toggle for mobile/responsive view -->
         <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
 
         <div class="top-links">
           <a href="#">API & Docs</a>
           <a href="#">About</a>
+          <!-- Theme toggle button (Light/Dark mode) -->
           <span class="theme-toggle" onclick="toggleTheme()">🌙</span>
         </div>
       </div>
 
-      <!-- CHAT MESSAGES -->
+      <!-- CHAT MESSAGES AREA -->
       <div class="messages" id="messages">
+        <!-- Default welcome message -->
         <div class="message bot">
           Hello! Welcome to the Malta chatbot. How can I help you?
         </div>
       </div>
 
-      <!-- INPUT BAR -->
+      <!-- INPUT BAR: Text input and Send button -->
       <div class="input-bar">
         <input type="text" id="chatInput" placeholder="Type your message..." onkeydown="handleEnter(event)" />
         <button onclick="sendMessage()">Send</button>
@@ -57,11 +75,16 @@
     </section>
   </div>
 
-  <!-- JS -->
+  <!-- JAVASCRIPT IMPORTS -->
+  <!-- Main chat logic script -->
   <script src="Scripts/chat.js"></script>
 
-  <!-- Sidebar toggle helper -->
+  <!-- Inline script for simple UI interactions -->
   <script>
+    /**
+     * Toggles the visibility/collapse state of the sidebar.
+     * Useful for mobile views or maximizing chat space.
+     */
     function toggleSidebar() {
       document.getElementById("sidebar").classList.toggle("collapsed");
     }
