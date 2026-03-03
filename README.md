@@ -9,7 +9,7 @@ A comprehensive cybersecurity intelligence platform featuring an interactive das
 | Feature | Description |
 |---------|-------------|
 | **📰 Live News Feed** | Aggregates cybersecurity news from official UK government sources (NCSC, Action Fraud, ICO, GOV.UK) and displays them in a responsive card grid. |
-| **🌍 Live Threat Map** | Interactive global threat visualization using SVG + Canvas animations showing real-time cyber attack simulations. |
+| **🌍 Live Threat Map** | Interactive global threat visualization with SVG + Canvas animations showing real-time cyber attack simulations. **Attack counts persist on the server** — when you reload or reopen the site, counters resume from the last recorded value, not zero. |
 | **📍 Interactive Reporting Map** | Clickable UK regional SVG map — click any of the 12 regions to see nearby cybercrime reporting centres with phone numbers, websites, and addresses. |
 | **💬 AI Chatbot** | Floating chatbot widget powered by a local LLM (Ollama + Llama 3.2) with RAG grounding. Supports fullscreen mode (⛶) and pop-out to a new tab (↗). |
 | **📊 Data-Driven Stats** | Animated counters and statistics on cyber threats, incidents, and response times. |
@@ -35,6 +35,7 @@ A comprehensive cybersecurity intelligence platform featuring an interactive das
 │  /api/query    → RAG Pipeline → Ollama LLM  │
 │  /api/updates  → Update Checker (scraper)   │
 │  /api/articles → JSON data store            │
+│  /api/attack-stats → Persistent stats file  │
 │  /api/health   → Status check               │
 │                                             │
 │  ChromaDB (Vector Store)                    │
@@ -234,6 +235,7 @@ Regional_Cybersec_Chatbot_UK_Malta/
 │       ├── verify_chatbot.py    #   Backend verification script
 │       ├── requirements.txt     #   Python dependencies
 │       ├── .env                 #   Environment config (Ollama URL, paths)
+│       ├── attack_stats.json    #   Persisted live attack map stats (auto-generated)
 │       └── chroma_db/           #   Vector database storage
 │
 ├── Malta/                       # Malta Regional Chatbot
@@ -274,6 +276,8 @@ The backend exposes the following REST endpoints:
 | `/api/query` | POST | Chat with the AI | `{"query": "What is phishing?", "region": "UK"}` |
 | `/api/updates` | GET | Check sources for new content | `?limit=5` |
 | `/api/articles` | GET | Retrieve news articles | `?limit=10` |
+| `/api/attack-stats` | GET | Retrieve persisted live attack stats | — |
+| `/api/attack-stats` | POST | Save current attack stats snapshot | `{"total": 150, "blocked": 102, "active": 3, "types": [...]}` |
 
 Full interactive documentation is available at **[http://localhost:8001/docs](http://localhost:8001/docs)** when the server is running.
 
@@ -329,6 +333,16 @@ ollama list
 <summary><strong>Map regions are not clickable</strong></summary>
 
 This can happen if the SVG doesn't load. Verify that `UK/assets/uk-map.svg` exists and the browser's console doesn't show errors. The map uses `postMessage` to communicate between the SVG and the parent page.
+</details>
+
+<details>
+<summary><strong>Attack stats reset to zero on reload</strong></summary>
+
+The backend must be running for stats to persist. The frontend saves stats to the server every 10 seconds and on page close. If the backend is offline, stats are stored locally in memory only.
+1. Ensure the backend is running (`python main.py`).
+2. Navigate to the Threats tab and wait at least 10 seconds.
+3. Reload — counters should continue from the last saved value.
+4. Check that `UK/backend/attack_stats.json` exists and contains non-zero values.
 </details>
 
 ---

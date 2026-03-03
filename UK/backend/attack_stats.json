@@ -1,0 +1,33 @@
+{
+  "total": 182,
+  "blocked": 125,
+  "active": 7,
+  "types": [
+    {
+      "name": "Phishing",
+      "color": "#ef4444",
+      "count": 32
+    },
+    {
+      "name": "Ransomware",
+      "color": "#f59e0b",
+      "count": 40
+    },
+    {
+      "name": "DDoS",
+      "color": "#8b5cf6",
+      "count": 38
+    },
+    {
+      "name": "Malware",
+      "color": "#ec4899",
+      "count": 38
+    },
+    {
+      "name": "SQL Injection",
+      "color": "#14b8a6",
+      "count": 34
+    }
+  ],
+  "last_updated": "2026-03-03T12:37:47.032188+00:00"
+}

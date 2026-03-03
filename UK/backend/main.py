@@ -24,9 +24,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
 import os
+import json
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from update_checker import UpdateChecker
 from rag import RAGPipeline
+from news_scraper import NewsScraper
 
 # Load environment variables
 load_dotenv()
@@ -57,8 +60,11 @@ app.add_middleware(
 # Path to JSON knowledge base (configurable via environment variable)
 json_path = os.getenv("JSON_DATA_PATH", "../../Scraped files")
 
-# Initialise update checker (monitors content changes)
+# Initialise update checker (monitors static content changes)
 update_checker = UpdateChecker(json_path)
+
+# Initialise the dynamic news scraper for RSS feeds
+news_scraper = NewsScraper(cache_duration_seconds=600)  # 10 minute cache
 
 # Initialise RAG pipeline (semantic search + LLM)
 rag_pipeline = None
@@ -69,6 +75,26 @@ try:
 except Exception as e:
     # If RAG fails, API still runs but chatbot won't be available
     print(f"Warning: RAG pipeline not initialized: {e}")
+
+# ---------------------------------------------------------
+# 🔹 Attack Stats Persistence
+# ---------------------------------------------------------
+# File path for persisting cumulative attack statistics
+ATTACK_STATS_FILE = os.path.join(os.path.dirname(__file__), "attack_stats.json")
+
+def _load_attack_stats() -> dict:
+    """Load attack stats from the JSON file, returning defaults if missing."""
+    try:
+        with open(ATTACK_STATS_FILE, "r") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+def _save_attack_stats(data: dict):
+    """Persist attack stats to the JSON file."""
+    data["last_updated"] = datetime.now(timezone.utc).isoformat()
+    with open(ATTACK_STATS_FILE, "w") as f:
+        json.dump(data, f, indent=2)
 
 
 # ---------------------------------------------------------
@@ -95,6 +121,14 @@ class UpdateInfo(BaseModel):
     last_checked: str
 
 
+# Model for receiving attack stats from the frontend
+class AttackStatsPayload(BaseModel):
+    total: int
+    blocked: int
+    active: int
+    types: List[dict]  # [{name, color, count}, ...]
+
+
 # ---------------------------------------------------------
 # 🔹 Root Endpoint
 # ---------------------------------------------------------
@@ -104,7 +138,7 @@ async def root():
     return {
         "status": "online",
         "service": "UK Cybersecurity API",
-        "endpoints": ["/api/updates", "/api/query", "/api/health"]
+        "endpoints": ["/api/updates", "/api/query", "/api/health", "/api/attack-stats"]
     }
 
 
@@ -198,17 +232,61 @@ async def query_chatbot(request: QueryRequest):
 # 🔹 Articles Endpoint
 # ---------------------------------------------------------
 @app.get("/api/articles")
-async def get_articles(limit: int = 10):
+async def get_articles(limit: int = 15):
     """
-    Get articles from the JSON data for display.
+    Get articles combining static JSON content and dynamic RSS feeds.
     """
     try:
-        # Retrieve articles from update checker
-        articles = update_checker.get_articles(limit=limit)
+        # Dynamically fetch latest articles from RSS feeds
+        dynamic_articles = await news_scraper.fetch_articles_async()
+        
+        # Retrieve articles from static update checker
+        static_articles = update_checker.get_articles(limit=limit)
 
-        return {"articles": articles}
+        # Combine, favoring the new dynamic articles, then static ones
+        # Use a list comprehension to filter out exact duplicate titles if any
+        combined_articles = []
+        seen_titles = set()
+        
+        for article in dynamic_articles + static_articles:
+            title = article.get('title', '')
+            if title and title not in seen_titles:
+                seen_titles.add(title)
+                combined_articles.append(article)
+                
+        # Return combined set, truncated to the requested limit if we want,
+        # but the frontend gracefully handles many articles with pagination.
+        return {"articles": combined_articles}
 
     # Handle errors gracefully
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------
+# 🔹 Attack Stats Endpoints
+# ---------------------------------------------------------
+@app.get("/api/attack-stats")
+async def get_attack_stats():
+    """
+    Return the previously saved cumulative attack statistics.
+    The frontend uses this to resume counters from where they left off.
+    """
+    data = _load_attack_stats()
+    if data is None:
+        return {"stats": None}  # No saved stats yet
+    return {"stats": data}
+
+
+@app.post("/api/attack-stats")
+async def save_attack_stats(payload: AttackStatsPayload):
+    """
+    Persist the current attack stats snapshot sent by the frontend.
+    Called periodically so the server always has a recent snapshot.
+    """
+    try:
+        _save_attack_stats(payload.dict())
+        return {"status": "saved"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -140,14 +140,14 @@ function popoutChatbot() {
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-      background: #0a0e1a;
+      background: #0B1929;
       color: #e2e8f0;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
     header {
-      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      background: linear-gradient(135deg, #4A90D9, #5CE0D2);
       color: white;
       padding: 1rem 1.5rem;
       font-weight: 700;
@@ -165,30 +165,30 @@ function popoutChatbot() {
       gap: 0.75rem;
     }
     .chat-message { max-width: 85%; padding: 0.85rem 1.1rem; border-radius: 16px; line-height: 1.55; font-size: 0.95rem; }
-    .chat-message.user { align-self: flex-end; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: white; border-bottom-right-radius: 4px; }
-    .chat-message.bot { align-self: flex-start; background: rgba(30,41,59,0.8); border: 1px solid rgba(100,116,139,0.25); border-bottom-left-radius: 4px; }
+    .chat-message.user { align-self: flex-end; background: linear-gradient(135deg, #4A90D9, #5CE0D2); color: white; border-bottom-right-radius: 4px; }
+    .chat-message.bot { align-self: flex-start; background: rgba(19,45,70,0.8); border: 1px solid rgba(92,224,210,0.15); border-bottom-left-radius: 4px; }
     .chat-message p { margin: 0; }
     .input-area {
       padding: 1rem 1.5rem;
-      background: rgba(15,23,42,0.9);
-      border-top: 1px solid rgba(100,116,139,0.2);
+      background: rgba(11,25,41,0.9);
+      border-top: 1px solid rgba(92,224,210,0.12);
       display: flex;
       gap: 0.75rem;
     }
     .input-area input {
       flex: 1;
       padding: 0.8rem 1rem;
-      background: rgba(30,41,59,0.6);
-      border: 1px solid rgba(100,116,139,0.3);
+      background: rgba(19,45,70,0.6);
+      border: 1px solid rgba(92,224,210,0.15);
       border-radius: 12px;
       color: #e2e8f0;
       font-size: 0.95rem;
       outline: none;
     }
-    .input-area input:focus { border-color: #0ea5e9; }
+    .input-area input:focus { border-color: #4A90D9; }
     .input-area button {
       padding: 0.8rem 1.5rem;
-      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      background: linear-gradient(135deg, #4A90D9, #5CE0D2);
       color: white;
       border: none;
       border-radius: 12px;
@@ -198,10 +198,10 @@ function popoutChatbot() {
     }
     .input-area button:hover { transform: scale(1.04); }
     .sources { margin-top: 0.5rem; font-size: 0.8rem; }
-    .sources a { color: #38bdf8; text-decoration: none; margin-right: 0.5rem; }
+    .sources a { color: #5CE0D2; text-decoration: none; margin-right: 0.5rem; }
     .sources a:hover { text-decoration: underline; }
-    .sources-label { color: #94a3b8; margin-right: 0.25rem; }
-    sup.citation { color: #38bdf8; font-size: 0.7rem; }
+    .sources-label { color: #7A9CB8; margin-right: 0.25rem; }
+    sup.citation { color: #5CE0D2; font-size: 0.7rem; }
     code { background: rgba(0,0,0,0.3); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85rem; }
     .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#64748b; margin:0 2px; animation: dotPulse 1.4s infinite ease-in-out both; }
     .dot:nth-child(2) { animation-delay: 0.2s; }

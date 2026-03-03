@@ -529,14 +529,49 @@ let attackStats = {
   active: 0
 };
 
-function initAttackMap() {
+/** Guard: prevents duplicate simulation intervals on repeated tab switches */
+let attackSimulationStarted = false;
+
+/**
+ * Initialises the attack map by fetching previously saved stats from the server.
+ * If saved stats exist, counters resume from those values instead of zero.
+ */
+async function initAttackMap() {
+  try {
+    const res = await fetch('http://localhost:8001/api/attack-stats');
+    const data = await res.json();
+
+    if (data.stats) {
+      // Restore cumulative counters
+      attackStats.total = data.stats.total || 0;
+      attackStats.blocked = data.stats.blocked || 0;
+      attackStats.active = data.stats.active || 0;
+
+      // Restore per-type counts (match by name)
+      if (data.stats.types && Array.isArray(data.stats.types)) {
+        data.stats.types.forEach(saved => {
+          const local = attackTypes.find(t => t.name === saved.name);
+          if (local) local.count = saved.count || 0;
+        });
+      }
+    }
+  } catch (e) {
+    // Server unreachable — start from zero (graceful fallback)
+    console.warn('Could not fetch saved attack stats, starting from zero:', e.message);
+  }
+
   updateThreatStats();
 }
 
 /**
  * Starts the interval for random attack generation.
+ * Includes a guard to prevent duplicate intervals on repeated tab switches,
+ * and a periodic sync that saves stats to the server every 30 seconds.
  */
 function startAttackSimulation() {
+  if (attackSimulationStarted) return;
+  attackSimulationStarted = true;
+
   // Simulate new attacks every 2-4 seconds with randomness
   setInterval(() => {
     simulateAttack();
@@ -546,6 +581,46 @@ function startAttackSimulation() {
   for (let i = 0; i < 5; i++) {
     setTimeout(() => simulateAttack(), i * 500);
   }
+
+  // Periodically save stats to the server every 10 seconds
+  setInterval(() => {
+    saveAttackStats();
+  }, 10000);
+
+  // Save when user leaves / refreshes — use sendBeacon for reliability
+  window.addEventListener('beforeunload', () => saveAttackStatsBeacon());
+}
+
+/**
+ * Builds the stats payload for saving.
+ */
+function buildAttackStatsPayload() {
+  return {
+    total: attackStats.total,
+    blocked: attackStats.blocked,
+    active: attackStats.active,
+    types: attackTypes.map(t => ({ name: t.name, color: t.color, count: t.count }))
+  };
+}
+
+/**
+ * Sends the current attack stats to the server via fetch (for periodic saves).
+ */
+function saveAttackStats() {
+  fetch('http://localhost:8001/api/attack-stats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildAttackStatsPayload())
+  }).catch(err => console.warn('Failed to save attack stats:', err.message));
+}
+
+/**
+ * Sends stats via navigator.sendBeacon — guaranteed to deliver on page close.
+ * Browsers kill regular fetch during unload, but sendBeacon always completes.
+ */
+function saveAttackStatsBeacon() {
+  const blob = new Blob([JSON.stringify(buildAttackStatsPayload())], { type: 'application/json' });
+  navigator.sendBeacon('http://localhost:8001/api/attack-stats', blob);
 }
 
 /**
@@ -792,7 +867,7 @@ function showRegionCenters(regionId) {
   headerCard.className = 'center-card glass-card region-dynamic-card active';
   headerCard.innerHTML = `
     <div class="center-name" style="font-size: 1.2rem;">📍 ${region.name}</div>
-    <span class="center-type" style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);">Selected Region</span>
+    <span class="center-type" style="background: linear-gradient(135deg, #4A90D9 0%, #5CE0D2 100%);">Selected Region</span>
     <p style="color: var(--text-secondary); margin-top: 0.75rem; font-size: 0.9rem;">Showing ${region.centers.length} reporting centre(s) near you.</p>
   `;
   container.insertBefore(headerCard, container.firstChild);
