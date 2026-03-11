@@ -1,24 +1,63 @@
+> Cyber Warrior Program | DeepCytes Cyber Labs (UK)
+
+## Program Attribution & Disclaimer
+
+This repository was created as part of the **Cyber Warrior Program** conducted by  
+**DeepCytes Cyber Labs (UK)**.
+
+The Cyber Warrior Program is an educational and mentorship-driven initiative focused on:
+- AI literacy
+- Cybersecurity awareness
+- Ethical research practices
+- Responsible use of emerging technologies
+
+All work contained in this repository is produced **solely for educational and research purposes**.
+
+### Legal & Ethical Notice
+- No confidential, proprietary, or classified information was used.
+- No malicious intent, exploitation, or unlawful activity is endorsed or performed.
+- AI-generated outputs are experimental and may be incomplete or inaccurate.
+- The responsibility for interpretation and usage of this content lies with the contributor.
+
+**DeepCytes Cyber Labs (UK)** and its affiliates:
+- Do not guarantee the accuracy of AI-generated content
+- Are not liable for misuse of any information contained herein
+- Do not endorse deployment of this work in production or offensive environments
+
+### Mentorship & Attribution
+This repository is published under mentorship provided through the  
+**Cyber Warrior Program by DeepCytes Cyber Labs (UK)**.
+
+The purpose of public publication is:
+- Skill demonstration
+- Transparent learning
+- Knowledge sharing within ethical and legal boundaries
+
+© DeepCytes Cyber Labs (UK). All rights reserved.
+
+---
+
 # 🛡️ Regional Cybersecurity Chatbot — UK & Malta
 
 A comprehensive cybersecurity intelligence platform featuring an interactive dashboard, an AI chatbot powered by a Retrieval-Augmented Generation (RAG) pipeline, and a live threat map. Built for the UK and Malta regions.
 
 ---
 
-## 📸 Key Features
+# 📸 Key Features
 
 | Feature | Description |
 |---------|-------------|
 | **📰 Live News Feed** | Aggregates cybersecurity news from official UK government sources (NCSC, Action Fraud, ICO, GOV.UK) and displays them in a responsive card grid. |
-| **🌍 Live Threat Map** | Interactive global threat visualization with SVG + Canvas animations showing real-time cyber attack simulations. **Attack counts persist on the server** — when you reload or reopen the site, counters resume from the last recorded value, not zero. |
-| **📍 Interactive Reporting Map** | Clickable UK regional SVG map — click any of the 12 regions to see nearby cybercrime reporting centres with phone numbers, websites, and addresses. |
-| **💬 AI Chatbot** | Floating chatbot widget powered by a local LLM (Ollama + Llama 3.2) with RAG grounding. Supports fullscreen mode (⛶) and pop-out to a new tab (↗). |
+| **🌍 Live Threat Map** | Interactive global threat visualization with SVG + Canvas animations showing real-time cyber attack simulations. Attack counts persist on the server so counters resume after reload. |
+| **📍 Interactive Reporting Map** | Clickable UK regional SVG map showing cybercrime reporting centres with phone numbers, websites, and addresses. |
+| **💬 AI Chatbot** | Floating chatbot widget powered by a local LLM (Ollama + Llama 3.2) with Retrieval-Augmented Generation (RAG) grounding. |
 | **📊 Data-Driven Stats** | Animated counters and statistics on cyber threats, incidents, and response times. |
 | **🌗 Dark / Light Theme** | Toggle between dark and light mode across the entire dashboard. |
-| **🇲🇹 Malta Chatbot** | Separate Malta-specific interface (accessible from the landing page). |
+| **🇲🇹 Malta Chatbot** | Separate Malta-specific chatbot interface accessible from the landing page. |
 
 ---
 
-## 🏗️ Architecture
+# 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -51,9 +90,7 @@ A comprehensive cybersecurity intelligence platform featuring an interactive das
 
 ---
 
-## 📋 Prerequisites
-
-Before setting up the project, ensure you have the following installed:
+# 📋 Prerequisites
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
@@ -63,89 +100,83 @@ Before setting up the project, ensure you have the following installed:
 | **Git** | Latest | Cloning the repository |
 | **Modern Browser** | Chrome / Edge / Firefox | Frontend dashboard |
 
-> [!IMPORTANT]
 > Ollama must be installed and running with the `llama3.2` model pulled before starting the backend.
 
 ---
 
-## 🚀 Setup & Installation
+# 🚀 Setup & Installation
 
-### 1. Clone the Repository
+## 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Prantik-1811/Regional_Cybersec_Chatbot_UK_Malta.git
 cd Regional_Cybersec_Chatbot_UK_Malta
 ```
 
-### 2. Create a Python Virtual Environment
+---
+
+## 2. Create a Python Virtual Environment
 
 ```bash
 python -m venv .venv
 ```
 
-**Activate it:**
+### Activate
 
-- **Windows (PowerShell):**
-  ```powershell
-  .venv\Scripts\Activate.ps1
-  ```
-- **Windows (CMD):**
-  ```cmd
-  .venv\Scripts\activate.bat
-  ```
-- **macOS / Linux:**
-  ```bash
-  source .venv/bin/activate
-  ```
+**Windows (PowerShell)**
 
-### 3. Install Backend Dependencies
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+**Windows (CMD)**
+
+```cmd
+.venv\Scripts\activate.bat
+```
+
+**macOS / Linux**
+
+```bash
+source .venv/bin/activate
+```
+
+---
+
+## 3. Install Backend Dependencies
 
 ```bash
 cd UK/backend
 pip install -r requirements.txt
 ```
 
-<details>
-<summary>📦 Full dependency list</summary>
+---
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `fastapi` | 0.109.0 | Web framework (API server) |
-| `uvicorn` | 0.27.0 | ASGI server |
-| `httpx` | 0.26.0 | Async HTTP client |
-| `beautifulsoup4` | 4.12.3 | HTML parsing for update checker |
-| `chromadb` | 0.4.22 | Vector database for RAG |
-| `sentence-transformers` | 2.2.2 | Text embeddings (`all-MiniLM-L6-v2`) |
-| `langchain` | 0.1.0 | LLM orchestration framework |
-| `langchain-ollama` | 0.0.2 | Ollama integration for LangChain |
-| `pypdf2` | 3.0.1 | PDF text extraction |
-| `pdfplumber` | 0.10.3 | Advanced PDF parsing |
-| `python-dotenv` | 1.0.0 | Environment variable management |
-| `aiofiles` | 23.2.1 | Async file operations |
+## 4. Install & Configure Ollama
 
-</details>
+Download from:
 
-### 4. Install & Configure Ollama
+https://ollama.com/download
 
-1. Download and install Ollama from [ollama.com](https://ollama.com/download).
+Pull the LLM model:
 
-2. Pull the LLM model:
-   ```bash
-   ollama pull llama3.2
-   ```
+```bash
+ollama pull llama3.2
+```
 
-3. Verify it's running:
-   ```bash
-   ollama list
-   ```
-   You should see `llama3.2` in the output.
+Verify installation:
 
-> [!NOTE]
-> Ollama runs by default on `http://localhost:11434`. If you need a different URL, update `OLLAMA_BASE_URL` in `UK/backend/.env`.
+```bash
+ollama list
+```
 
-### 5. Ingest Data into the Vector Database
+You should see **llama3.2** listed.
 
-Before the chatbot can answer questions, you need to populate the ChromaDB vector store with the scraped data:
+---
+
+# 📦 Ingest Data into the Vector Database
+
+Before the chatbot can answer questions, populate the ChromaDB vector store:
 
 ```bash
 cd UK/backend
@@ -153,212 +184,193 @@ python ingest.py
 ```
 
 This will:
-- Read the scraped JSON data from `Scraped files/cyber_chatbot_UK1.json`
-- Chunk and embed the documents using `all-MiniLM-L6-v2`
-- Store the vectors in `UK/backend/chroma_db/`
+
+- Read scraped JSON data
+- Chunk and embed documents
+- Generate embeddings using **all-MiniLM-L6-v2**
+- Store vectors in **chroma_db**
 
 ---
 
-## ▶️ Running the Application
+# ▶️ Running the Application
 
-### Option A: One-Click Launch (Windows)
+## Option A: One-Click Launch (Windows)
 
-Double-click **`run_chatbot.bat`** in the root directory.
+Double-click:
+
+```
+run_chatbot.bat
+```
 
 This will:
-1. Start the FastAPI backend server (port `8001`) in a new terminal window.
-2. Wait 5 seconds for initialization.
-3. Open the dashboard (`UK/index.html`) in your default browser.
 
-### Option B: Manual Startup
+1. Start FastAPI backend server
+2. Wait a few seconds
+3. Open the dashboard in your browser
 
-**Step 1 — Start the backend server:**
+---
+
+## Option B: Manual Startup
+
+Start backend:
 
 ```bash
 cd UK/backend
 python main.py
 ```
 
-You should see:
+Expected output:
+
 ```
 Loaded collection with N chunks
 Connected to Ollama at http://localhost:11434
-INFO:     Uvicorn running on http://0.0.0.0:8001
+INFO: Uvicorn running on http://0.0.0.0:8001
 ```
 
-**Step 2 — Open the frontend:**
+Open frontend:
 
-Open `UK/index.html` directly in your browser (double-click the file or use `Ctrl+O` in the browser).
-
-> [!TIP]
-> The frontend works on the `file://` protocol — no local web server is needed. The chatbot communicates with the backend via `http://localhost:8001`.
-
----
-
-## ✅ Verifying the Setup
-
-After starting the application, verify everything is working:
-
-| Check | How |
-|-------|-----|
-| **Backend is running** | Visit [http://localhost:8001](http://localhost:8001) — should return `{"status": "online", ...}` |
-| **API docs are accessible** | Visit [http://localhost:8001/docs](http://localhost:8001/docs) — Swagger UI should load |
-| **Health check** | Visit [http://localhost:8001/api/health](http://localhost:8001/api/health) — `rag_available` should be `true` |
-| **Frontend loads** | Open `UK/index.html` — dashboard should render with animated stats |
-| **Chatbot responds** | Click 💬, type a question, and verify a response is generated |
-| **Map is clickable** | Go to "Report Centers" tab and click a UK region |
+```
+UK/index.html
+```
 
 ---
 
-## 📂 Project Structure
+# 📂 Project Structure
 
 ```
 Regional_Cybersec_Chatbot_UK_Malta/
-├── UK/                          # Main UK Dashboard Application
-│   ├── index.html               #   Frontend entry point (SPA)
+├── UK/
+│   ├── index.html
 │   ├── scripts/
-│   │   ├── main.js              #   Dashboard logic, tabs, map, counters
-│   │   └── chatbot.js           #   Chatbot widget, fullscreen, popout
+│   │   ├── main.js
+│   │   └── chatbot.js
 │   ├── styles/
-│   │   ├── main.css             #   Core styles, theme, chatbot, cards
-│   │   └── cyber-map.css        #   Threat map animations
+│   │   ├── main.css
+│   │   └── cyber-map.css
 │   ├── assets/
-│   │   ├── uk-map.svg           #   Interactive UK region map (with embedded click script)
-│   │   └── world-map.svg        #   Global threat map base
+│   │   ├── uk-map.svg
+│   │   └── world-map.svg
 │   └── backend/
-│       ├── main.py              #   FastAPI server (API endpoints)
-│       ├── rag.py               #   RAG pipeline (ChromaDB + Ollama)
-│       ├── ingest.py            #   Data ingestion into vector DB
-│       ├── update_checker.py    #   Checks sources for new content
-│       ├── pdf_processor.py     #   PDF text extraction utilities
-│       ├── train_chatbot.py     #   Training data preparation
-│       ├── verify_chatbot.py    #   Backend verification script
-│       ├── requirements.txt     #   Python dependencies
-│       ├── .env                 #   Environment config (Ollama URL, paths)
-│       ├── attack_stats.json    #   Persisted live attack map stats (auto-generated)
-│       └── chroma_db/           #   Vector database storage
+│       ├── main.py
+│       ├── rag.py
+│       ├── ingest.py
+│       ├── update_checker.py
+│       ├── pdf_processor.py
+│       ├── train_chatbot.py
+│       ├── verify_chatbot.py
+│       ├── requirements.txt
+│       ├── attack_stats.json
+│       └── chroma_db/
 │
-├── Malta/                       # Malta Regional Chatbot
-│   ├── index.html               #   Malta frontend
-│   ├── Scripts/                 #   Malta-specific JS
-│   └── Styles/                  #   Malta-specific CSS
+├── Malta/
+│   ├── index.html
+│   ├── Scripts/
+│   └── Styles/
 │
-├── Scraped files/               # Raw scraped JSON data
-│   ├── cyber_chatbot_UK1.json   #   Primary UK data (used by backend)
-│   ├── cyber_chatbot_UK2.json   #   Additional datasets
-│   ├── cyber_chatbot_UK3.json
-│   ├── cyber_chatbot_UK4.json
-│   └── cyber_chatbot_UK_artic.json
+├── Scraped files/
+├── Training_Data/
+├── tools/
+│   ├── gather_data.py
+│   ├── inspect_pdfs.py
+│   ├── inspect_pdfs_v2.py
+│   ├── debug_api.py
+│   └── debug_json.py
 │
-├── Training_Data/               # Training datasets for RAG pipeline
-├── tools/                       # Development utilities
-│   ├── gather_data.py           #   Web scraping tool
-│   ├── inspect_pdfs.py          #   PDF content inspector
-│   ├── inspect_pdfs_v2.py       #   Improved PDF inspector
-│   ├── debug_api.py             #   API debugging utility
-│   └── debug_json.py            #   JSON data debugger
-│
-├── run_chatbot.bat              # One-click launcher (Windows)
-├── README.md                    # This file
-└── world.svg                    # Global map asset
+├── run_chatbot.bat
+├── README.md
+└── world.svg
 ```
 
 ---
 
-## 🔌 API Reference
+# 🔌 API Reference
 
-The backend exposes the following REST endpoints:
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Server status |
+| `/api/health` | GET | Health check |
+| `/api/query` | POST | Chat with the AI |
+| `/api/updates` | GET | Check sources for new content |
+| `/api/articles` | GET | Retrieve news articles |
+| `/api/attack-stats` | GET | Retrieve attack stats |
+| `/api/attack-stats` | POST | Save attack stats |
 
-| Endpoint | Method | Description | Example |
-|----------|--------|-------------|---------|
-| `/` | GET | Server status | — |
-| `/api/health` | GET | Health check (RAG + Ollama status) | — |
-| `/api/query` | POST | Chat with the AI | `{"query": "What is phishing?", "region": "UK"}` |
-| `/api/updates` | GET | Check sources for new content | `?limit=5` |
-| `/api/articles` | GET | Retrieve news articles | `?limit=10` |
-| `/api/attack-stats` | GET | Retrieve persisted live attack stats | — |
-| `/api/attack-stats` | POST | Save current attack stats snapshot | `{"total": 150, "blocked": 102, "active": 3, "types": [...]}` |
+Interactive docs available at:
 
-Full interactive documentation is available at **[http://localhost:8001/docs](http://localhost:8001/docs)** when the server is running.
-
----
-
-## ⚙️ Configuration
-
-The backend is configured via environment variables in `UK/backend/.env`:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
-| `JSON_DATA_PATH` | `../../Scraped files/cyber_chatbot_UK1.json` | Path to scraped JSON data |
-| `CHROMA_DB_PATH` | `./chroma_db` | Path to ChromaDB vector store |
+```
+http://localhost:8001/docs
+```
 
 ---
 
-## 🛠️ Troubleshooting
+# ⚙️ Configuration
 
-<details>
-<summary><strong>Chatbot says "I'm currently offline"</strong></summary>
+Environment variables inside:
 
-The frontend can't reach the backend. Make sure:
-1. The backend is running (`python main.py` in `UK/backend/`).
-2. It's listening on port `8001`.
-3. No firewall is blocking `localhost:8001`.
-</details>
+```
+UK/backend/.env
+```
 
-<details>
-<summary><strong>Backend starts but RAG says "not initialized"</strong></summary>
+Example:
 
-The vector database is empty. Run the ingestion script:
+```
+OLLAMA_BASE_URL=http://localhost:11434
+JSON_DATA_PATH=../../Scraped files/cyber_chatbot_UK1.json
+CHROMA_DB_PATH=./chroma_db
+```
+
+---
+
+# 🛠 Troubleshooting
+
+### Chatbot says "I'm currently offline"
+
+Ensure backend is running:
+
 ```bash
-cd UK/backend
+python main.py
+```
+
+---
+
+### Backend starts but RAG says "not initialized"
+
+Run ingestion:
+
+```bash
 python ingest.py
 ```
-</details>
 
-<details>
-<summary><strong>"Error calling LLM: Connection refused"</strong></summary>
+---
 
-Ollama is not running. Start it:
+### "Error calling LLM: Connection refused"
+
+Start Ollama:
+
 ```bash
 ollama serve
 ```
-Then verify the model is available:
+
+Verify:
+
 ```bash
 ollama list
 ```
-</details>
-
-<details>
-<summary><strong>Map regions are not clickable</strong></summary>
-
-This can happen if the SVG doesn't load. Verify that `UK/assets/uk-map.svg` exists and the browser's console doesn't show errors. The map uses `postMessage` to communicate between the SVG and the parent page.
-</details>
-
-<details>
-<summary><strong>Attack stats reset to zero on reload</strong></summary>
-
-The backend must be running for stats to persist. The frontend saves stats to the server every 10 seconds and on page close. If the backend is offline, stats are stored locally in memory only.
-1. Ensure the backend is running (`python main.py`).
-2. Navigate to the Threats tab and wait at least 10 seconds.
-3. Reload — counters should continue from the last saved value.
-4. Check that `UK/backend/attack_stats.json` exists and contains non-zero values.
-</details>
 
 ---
 
-## 🤝 Data Sources & Partners
+# 🤝 Data Sources & Partners
 
 | Source | URL |
-|--------|-----|
-| National Cyber Security Centre (NCSC) | [ncsc.gov.uk](https://www.ncsc.gov.uk) |
-| Action Fraud | [actionfraud.police.uk](https://www.actionfraud.police.uk) |
-| Information Commissioner's Office (ICO) | [ico.org.uk](https://ico.org.uk) |
-| GOV.UK Cyber Security | [gov.uk](https://www.gov.uk/government/topics/cyber-security) |
+|------|------|
+| National Cyber Security Centre (NCSC) | https://www.ncsc.gov.uk |
+| Action Fraud | https://www.actionfraud.police.uk |
+| Information Commissioner's Office (ICO) | https://ico.org.uk |
+| GOV.UK Cyber Security | https://www.gov.uk/government/topics/cyber-security |
 
 ---
 
-## 📄 License
+# 📄 License
 
 This project is developed for the **Regional Cybersecurity Chatbot — UK & Malta** academic project.
 
